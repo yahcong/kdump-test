@@ -1,0 +1,14 @@
+# kdump-test
+This test suite will cover part/all kdump testing. It will base on RHEL/fedora release.
+The primary responsibility is to test kexec-tools package.
+We can find kexec-tools source code in http://pkgs.fedoraproject.org/cgit/rpms/kexec-tools.git
+
+Test item:
+1) trigger ways
+2) makedumpfile
+
+Also, we can test crash utility package. We can find crash-utility code in https://github.com/crash-utility/crash.git
+Crash will analysis vmcore that it is saved by kernel panic.
+
+Test item:
+1) analysis vmcore
