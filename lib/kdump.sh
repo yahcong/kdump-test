@@ -144,3 +144,49 @@ analyse_vmcore_gdb()
 {
 	#
 }
+
+# special dump method/target
+config_raid()
+{
+	# include raid 0, 1, 5, 10
+}
+
+config_iscsi()
+{
+	#
+}
+
+config_fcoe()
+{
+	#
+}
+
+config_ssh_ipv6()
+{
+	#
+}
+
+config_nfs_ipv6()
+{
+	#
+}
+
+config_bridge()
+{
+	#
+}
+
+config_vlan()
+{
+	#
+}
+
+config_bonding()
+{
+	#
+}
+
+config_kvm_guest()
+{
+	#
+}
