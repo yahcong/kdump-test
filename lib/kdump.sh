@@ -47,12 +47,22 @@ config_nfs()
 	#
 }
 
+config_nfs_ipv6()
+{
+	#
+}
+
 config_ssh()
 {
 	#
 }
 
 config_ssh_key()
+{
+	#
+}
+
+config_ssh_ipv6()
 {
 	#
 }
@@ -114,79 +124,6 @@ trigger_kernel_lockup()
 }
 
 trigger_kernel_panic_on_warn()
-{
-	#
-}
-
-# check vmcore whether it exists, just try to get it.
-get_vmcore()
-{
-	#
-}
-
-# analyse vmcore
-analyse_live()
-{
-	#
-}
-
-analyse_vmcore_basic()
-{
-	#
-}
-
-analyse_vmcore_readelf()
-{
-	#
-}
-
-analyse_vmcore_gdb()
-{
-	#
-}
-
-# special dump method/target
-config_raid()
-{
-	# include raid 0, 1, 5, 10
-}
-
-config_iscsi()
-{
-	#
-}
-
-config_fcoe()
-{
-	#
-}
-
-config_ssh_ipv6()
-{
-	#
-}
-
-config_nfs_ipv6()
-{
-	#
-}
-
-config_bridge()
-{
-	#
-}
-
-config_vlan()
-{
-	#
-}
-
-config_bonding()
-{
-	#
-}
-
-config_kvm_guest()
 {
 	#
 }
