@@ -84,111 +84,116 @@ configure_kdump_conf()
 	# config_post, config_pre
 	# config_extra
 	# config_default
-	#
+	echo "config kdump configuration"
 }
 
 config_raw()
 {
-	#
+	echo "config raw"
 }
 
 config_dev_name()
 {
-	#
+	echo "config device name"
 }
 
 config_dev_uuid()
 {
-	#
+	echo "config device uuid"
 }
 
 config_dev_label()
 {
-	#
+	echo "config device label"
+}
+
+config_dev_softlink()
+{
+	echo "config device softlink"
 }
 
 config_nfs()
 {
-	#
+	echo "config nfs target"
 }
 
 config_nfs_ipv6()
 {
-	#
+	echo "config ipv6 nfs target"
 }
 
 config_ssh()
 {
-	#
+	echo "config ssh target"
 }
 
 config_ssh_key()
 {
-	#
+	echo "config ssh key"
 }
 
 config_ssh_ipv6()
 {
-	#
+	echo "config ipv6 ssh target"
 }
 
 config_path()
 {
-	#
+	echo "config path"
 }
 
 config_core_collector()
 {
-	#
+	echo "config collector (makedumpfile)"
 }
 
 config_post()
 {
-	#
+	echo "config post option"
 }
 
 config_pre()
 {
-	#
+	echo "config prepare option"
 }
 
 config_extra()
 {
-	#
+	echo "config extra option"
 }
 
 config_default()
 {
-	#
+	echo "config default option"
 }
 
 # trigger methods, the common methods is 'echo c > /proc/sysrq'
 trigger_echo_c()
 {
-	#
+	echo "trigger by echo c > /proc/sysrq-trigger"
 }
 
 trigger_AltSysC()
 {
-	#
+	echo "trigger by AltSysC button"
 }
 
 tirgger_kernel_BUG()
 {
-	#
+	echo "trigger by kernel function BUG()"
 }
 
 trigger_kernel_panic()
 {
-	#
+	echo "trigger by kernel function panic()"
 }
 
 trigger_kernel_lockup()
 {
-	#
+	echo "trigger by hard lockup"
 }
 
 trigger_kernel_panic_on_warn()
 {
-	#
+	echo "trigger by kernel function panic_on_warn()"
 }
