@@ -5,8 +5,72 @@
 # change kernel parameter crashkernel=<>M or other value
 prepare_kdump()
 {
+	KERARGS=""
+	local default=/boot/vmlinuz=`uname -r`
+	[ ! -s "$default" ] && default=/boot/vmlinux-`uname -r`
+	/sbin/grubby --set-default="${default}"
+
+	# for uncompressed kernel, i.e. vmlinux
+	[[ ${defalt} == *vmlinux* ]] && {
+		echo "- modifying /etc/sysconfig/kdump properly for 'vmlinux'."
+		sed -i 's/\(KDUMP_IMG\)=.*/\1=vmlinux/' /etc/sysconfig/kdump
+	}
+
 	# check /sys/kernel/kexec_crash_size value and update if need.
 	# need restart system when you change this value.
+	[ `cat /sys/kernel/kexec_crash_size` -eq 0 ] && {
+		echo "`grep MemTotal /proc/meminfo`"
+		KERARGS+="`def_kdump_mem`"
+	}
+	[ "${KERARGS}" ] && {
+		# need create a file/flag to sign we have do this.
+		echo "- changing boot loader."
+		{
+			/sbin/grubby	\
+				--args="${KERARGS}"	\
+				--update-kernel="${default}" &&
+			if [ ${K_ARCH} = "s390x" ]; then zipl; fi
+		} || echo "change boot loader error!"
+		echo "prepare reboot."
+		/usr/bin/sync; /usr/sbin/reboot
+	}
+
+	# install kexec-tools package
+	rpm -q kexec-tools || yum install -y kexec-tools || echo "kexec-tools install failed."
+	
+	# enable kdump service
+	# systemd | sys-v
+	/bin/systemctl enable kdump.service || /sbin/chkconfig kdump on
+	restart_kdump
+}
+
+restart_kdump()
+{
+	echo "retart kdump service."
+	K_CONFIG="/etc/kdump.conf"
+	grep -v ^# "${K_CONFIG}"
+	# delete kdump.img in /boot directory
+	rm -f /boot/initrd-*kdump.img || rm -f /boot/initramfs-*kdump.img
+	/usr/bin/kdumpctl restart 2>&1 | tee /tmp/kdump_restart.log || /sbin/service kdump restart 2>&1 | tee /tmp/kdump_restart.log
+	rc=$?
+	`cat /tmp/kdump_restart.log`
+	[ $rc -ne 0 ] && echo "kdump service start failed." && exit 1
+	echo "kdump service start normal."
+}
+
+# Config default kdump memory
+def_kdump_mem()
+{
+	local args=""
+	K_ARCH="$(uname -m)"
+	if [[ "${K_ARCH}" = "x86_64" ]]; then args="crashkernel=160M"
+	elif [[ "${K_ARCH}" = "ppc64" ]]; then args="crashkernel=320M"
+	elif [[ "${K_ARCH}" = "s390x" ]]; then args="crashkernel=160M"
+	elif [[ "${K_ARCH}" = "ppc64le" ]]; then args="crashkernel=320M"
+	elif [[ "${K_ARCH}" = "aarch64" ]]; then args="crashkernel=2048M"
+	elif [[ "${K_ARCH}" = i?86 ]]; then args="crashkernel=128M"
+	fi
+	echo "$args"
 }
 
 # config kdump.conf
@@ -20,6 +84,7 @@ configure_kdump_conf()
 	# config_post, config_pre
 	# config_extra
 	# config_default
+	#
 }
 
 config_raw()
