@@ -5,48 +5,56 @@
 # change kernel parameter crashkernel=<>M or other value
 prepare_kdump()
 {
-	KERARGS=""
-	local default=/boot/vmlinuz=`uname -r`
-	[ ! -s "$default" ] && default=/boot/vmlinux-`uname -r`
-	/sbin/grubby --set-default="${default}"
-
-	# for uncompressed kernel, i.e. vmlinux
-	[[ ${defalt} == *vmlinux* ]] && {
-		echo "- modifying /etc/sysconfig/kdump properly for 'vmlinux'."
-		sed -i 's/\(KDUMP_IMG\)=.*/\1=vmlinux/' /etc/sysconfig/kdump
-	}
-
-	# check /sys/kernel/kexec_crash_size value and update if need.
-	# need restart system when you change this value.
-	[ `cat /sys/kernel/kexec_crash_size` -eq 0 ] && {
-		echo "`grep MemTotal /proc/meminfo`"
-		KERARGS+="`def_kdump_mem`"
-	}
-	[ "${KERARGS}" ] && {
-		# need create a file/flag to sign we have do this.
-		echo "- changing boot loader."
-		{
-			/sbin/grubby	\
-				--args="${KERARGS}"	\
-				--update-kernel="${default}" &&
-			if [ ${K_ARCH} = "s390x" ]; then zipl; fi
-		} || echo "change boot loader error!"
-		echo "prepare reboot."
-		/usr/bin/sync; /usr/sbin/reboot
-	}
-
-	# install kexec-tools package
-	rpm -q kexec-tools || yum install -y kexec-tools || echo "kexec-tools install failed."
+	#KERARGS=""
+	if [ ! -f "${K_REBOOT}" ]; then
+		local default=/boot/vmlinuz=`uname -r`
+		[ ! -s "$default" ] && default=/boot/vmlinux-`uname -r`
+		/sbin/grubby --set-default="${default}"
 	
-	# enable kdump service
-	# systemd | sys-v
+		# for uncompressed kernel, i.e. vmlinux
+		[[ ${defalt} == *vmlinux* ]] && {
+			echo "- modifying /etc/sysconfig/kdump properly for 'vmlinux'."
+			sed -i 's/\(KDUMP_IMG\)=.*/\1=vmlinux/' /etc/sysconfig/kdump
+		}
+
+		# check /sys/kernel/kexec_crash_size value and update if need.
+		# need restart system when you change this value.
+		grep -q 'crashkernel' <<< "${KERARGS}" || {
+			[ `cat /sys/kernel/kexec_crash_size` -eq 0 ] && {
+				echo "`grep MemTotal /proc/meminfo`"
+				KERARGS+="`def_kdump_mem`"
+			}
+		}
+		[ "${KERARGS}" ] && {
+			# need create a file/flag to sign we have do this.
+			touch ${K_REBOOT}
+			echo "- changing boot loader."
+			{
+				/sbin/grubby	\
+					--args="${KERARGS}"	\
+					--update-kernel="${default}" &&
+				if [ ${K_ARCH} = "s390x" ]; then zipl; fi
+			} || {
+				echo "- change boot loader error!"
+				exit 1
+			}
+			echo "prepare reboot."
+			/usr/bin/sync; /usr/sbin/reboot
+		}
+
+		# install kexec-tools package
+		rpm -q kexec-tools || yum install -y kexec-tools || echo "kexec-tools install failed."
+	fi
+	[ -f "${K_REBOOT}" ] && rm -f "${K_REBOOT}"
+
+	# enable kdump service: systemd | sys-v
 	/bin/systemctl enable kdump.service || /sbin/chkconfig kdump on
 	restart_kdump
 }
 
 restart_kdump()
 {
-	echo "retart kdump service."
+	echo "- retart kdump service."
 	K_CONFIG="/etc/kdump.conf"
 	grep -v ^# "${K_CONFIG}"
 	# delete kdump.img in /boot directory
@@ -54,8 +62,8 @@ restart_kdump()
 	/usr/bin/kdumpctl restart 2>&1 | tee /tmp/kdump_restart.log || /sbin/service kdump restart 2>&1 | tee /tmp/kdump_restart.log
 	rc=$?
 	`cat /tmp/kdump_restart.log`
-	[ $rc -ne 0 ] && echo "kdump service start failed." && exit 1
-	echo "kdump service start normal."
+	[ $rc -ne 0 ] && echo "- kdump service start failed." && exit 1
+	echo "- kdump service start normal."
 }
 
 # Config default kdump memory
