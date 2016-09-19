@@ -1,14 +1,21 @@
-# kdump-test
-This test suite will cover part/all kdump testing. It will base on RHEL/fedora release.
+KDUMP TESTING
+--------------------------------
+
+This test suite will cover part kdump testing. It will base on RHEL/CentOS/Fedora release.
 The primary responsibility is to test kexec-tools package.
 We can find kexec-tools source code in http://pkgs.fedoraproject.org/cgit/rpms/kexec-tools.git
 
-Test item:
-1) trigger ways
-2) makedumpfile
+Kdump test introduction
+-------------------------------
 
-Also, we can test crash utility package. We can find crash-utility code in https://github.com/crash-utility/crash.git
-Crash will analysis vmcore that it is saved by kernel panic.
+Follow the steps to setup kdump test suite.
 
-Test item:
-1) analysis vmcore
+1. Install these additional packages:
+	* kexec-tools
+	* crash
+	* kernel-debuginfo
+2. Make sure dump target has enough space to save vmcore. (size of physical memory)
+3. Modify configuration file /etc/kdump.conf.
+4. Run "make run".
+
+The details please see the test case.
