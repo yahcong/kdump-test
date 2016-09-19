@@ -3,6 +3,9 @@
 # In Fedora and upstream kernel, can't support crashkernel=auto kernel parameter,
 # but we can check /sys/kernel/kexec_crash_size value, if equal to zero, so we need
 # change kernel parameter crashkernel=<>M or other value
+
+K_ARCH="$(uname -m)"
+
 prepare_kdump()
 {
 	#KERARGS=""
@@ -42,10 +45,11 @@ prepare_kdump()
 			/usr/bin/sync; /usr/sbin/reboot
 		}
 
-		# install kexec-tools package
-		rpm -q kexec-tools || yum install -y kexec-tools || echo "kexec-tools install failed."
 	fi
-	[ -f "${K_REBOOT}" ] && rm -f "${K_REBOOT}"
+	#[ -f "${K_REBOOT}" ] && rm -f "${K_REBOOT}"
+
+	# install kexec-tools package
+	rpm -q kexec-tools || yum install -y kexec-tools || echo "kexec-tools install failed."
 
 	# enable kdump service: systemd | sys-v
 	/bin/systemctl enable kdump.service || /sbin/chkconfig kdump on
@@ -70,7 +74,6 @@ restart_kdump()
 def_kdump_mem()
 {
 	local args=""
-	K_ARCH="$(uname -m)"
 	if [[ "${K_ARCH}" = "x86_64" ]]; then args="crashkernel=160M"
 	elif [[ "${K_ARCH}" = "ppc64" ]]; then args="crashkernel=320M"
 	elif [[ "${K_ARCH}" = "s390x" ]]; then args="crashkernel=160M"
