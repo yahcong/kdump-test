@@ -23,7 +23,7 @@ crash-sysrq-c()
 	# add check vmcore test in here if need
 	echo "- get vmcore file"
 	ls -lt ${K_DEFAULT_PATH}/*/ | grep vmcore
-	[ $? -ne 0] && echo "- get vmocre failed!" && exit 1
+	[ $? -ne 0 ] && echo "- get vmocre failed!" && exit 1
 	echo "- get vmcore successful!"
 
 }
