@@ -3,21 +3,30 @@
 . ../lib/kdump.sh
 
 K_DEFAULT_PATH="/var/crash"
+C_REBOOT="./C_REBOOT"
 
-crash()
+crash-sysrq-c()
 {
 	# Maybe need disable avc check
-	if [ ! -f ${C_REBOOT} ]
+	if [ ! -f ${C_REBOOT} ]; then
 		prepare_kdump
 		# add config kdump.conf in here if need
 		restart_kdump
-		# add check vmcore in here if need
-		echo "- echo c > /proc/sysrq-trigger"
+		echo "- boot to 2nd kernel"
+		touch "${C_REBOOT}"
+		sync
 		echo c > /proc/sysrq-trigger
+	else
+		rm -f "${C_REBOOT}"
 	fi
-	[ -f ${C_REBOOT} ] && rm -f ${C_REBOOT}
-	echo "- get vmcore file path"
-	ls -lt "${K_DEFAULT_PATH}" | grep vmcore
+
+	# add check vmcore test in here if need
+	echo "- get vmcore file"
+	ls -lt ${K_DEFAULT_PATH}/*/ | grep vmcore
+	[ $? -ne 0] && echo "- get vmocre failed!" && exit 1
+	echo "- get vmcore successful!"
+
 }
 
-echo "- start testing"
+echo "- start"
+crash-sysrq-c

@@ -1,11 +1,12 @@
 # Makefile
 
-.PHONY: build clean run
+.PHONY: build run
 
-FILES := runtest.sh
+FILES := Makefile runtest.sh
 
 build:
 	chmod a+x runtest.sh
 
 run: $(FILES) build
 	./runtest.sh
+

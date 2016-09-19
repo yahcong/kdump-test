@@ -5,6 +5,7 @@
 # change kernel parameter crashkernel=<>M or other value
 
 K_ARCH="$(uname -m)"
+K_REBOOT="./K_REBOOT"
 
 prepare_kdump()
 {
@@ -53,7 +54,6 @@ prepare_kdump()
 
 	# enable kdump service: systemd | sys-v
 	/bin/systemctl enable kdump.service || /sbin/chkconfig kdump on
-	restart_kdump
 }
 
 restart_kdump()
@@ -65,7 +65,6 @@ restart_kdump()
 	rm -f /boot/initrd-*kdump.img || rm -f /boot/initramfs-*kdump.img
 	/usr/bin/kdumpctl restart 2>&1 | tee /tmp/kdump_restart.log || /sbin/service kdump restart 2>&1 | tee /tmp/kdump_restart.log
 	rc=$?
-	`cat /tmp/kdump_restart.log`
 	[ $rc -ne 0 ] && echo "- kdump service start failed." && exit 1
 	echo "- kdump service start normal."
 }
