@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 
+. ./kdump.sh
+
 # This file will test 'crash' command.
+
+check_vmcore_file()
+{
+	echo "- get vmocre file"
+	ls -lt ${K_DEFAULT_PATH}/*/ | grep vmcore
+	[ $? -ne 0 ] && echo "- get vmcore failed!" && exit 1
+	echo "- get vmcore successful!"
+}
 
 analyse_by_crash()
 {

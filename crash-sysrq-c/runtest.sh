@@ -2,9 +2,6 @@
 
 . ../lib/kdump.sh
 
-K_DEFAULT_PATH="/var/crash"
-C_REBOOT="./C_REBOOT"
-
 crash-sysrq-c()
 {
 	# Maybe need disable avc check

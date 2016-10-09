@@ -5,7 +5,10 @@
 # change kernel parameter crashkernel=<>M or other value
 
 K_ARCH="$(uname -m)"
+K_DEFAULT_PATH="/var/crash"
 K_REBOOT="./K_REBOOT"
+K_CONFIG="/etc/kdump.conf"
+C_REBOOT="./C_REBOOT"
 
 prepare_kdump()
 {
@@ -59,7 +62,6 @@ prepare_kdump()
 restart_kdump()
 {
 	echo "- retart kdump service."
-	K_CONFIG="/etc/kdump.conf"
 	grep -v ^# "${K_CONFIG}"
 	# delete kdump.img in /boot directory
 	rm -f /boot/initrd-*kdump.img || rm -f /boot/initramfs-*kdump.img
@@ -180,7 +182,18 @@ config_default()
 # trigger methods, the common methods is 'echo c > /proc/sysrq'
 trigger_echo_c()
 {
-	echo "trigger by echo c > /proc/sysrq-trigger"
+	# Please disable avc check if you run this case in beaker/ci.
+	if [ ! -f ${C_REBOOT} ]; then
+		prepare_kdump
+		restart_kdump
+		echo "- boot to 2nd kernel"
+		touch "${C_REBOOT}"
+		sync
+		echo c > /proc/sysrq-trigger
+		echo "- can't arrive here!"
+	else
+		rm -f "${C_REBOOT}"
+	fi
 }
 
 trigger_AltSysC()
