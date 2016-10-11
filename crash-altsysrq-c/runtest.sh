@@ -34,3 +34,6 @@ crash-altsysrq-c()
 	[ $? -ne 0 ] && echo "- get vmocre failed!" && exit 1
 	echo "- get vmcore successful!"
 }
+
+echo "- start"
+crash-altsysrq-c
