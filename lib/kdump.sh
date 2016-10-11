@@ -8,11 +8,19 @@ K_ARCH="$(uname -m)"
 K_DEFAULT_PATH="/var/crash"
 K_REBOOT="./K_REBOOT"
 K_CONFIG="/etc/kdump.conf"
+K_PATH="/KDUMP-PATH"
+K_RAW="/KDUMP-RAW"
+
 C_REBOOT="./C_REBOOT"
+
+KPATH=${KPATH:-"${K_DEFAULT_PATH}"}
+OPTION=${OPTION:-}
+MP=${MP:-/}
+LABEL=${LABEL:-label-kdump}
+RAW=${RAW:-"no"}
 
 prepare_kdump()
 {
-	#KERARGS=""
 	if [ ! -f "${K_REBOOT}" ]; then
 		local default=/boot/vmlinuz=`uname -r`
 		[ ! -s "$default" ] && default=/boot/vmlinux-`uname -r`
@@ -45,7 +53,7 @@ prepare_kdump()
 				echo "- change boot loader error!"
 				exit 1
 			}
-			echo "prepare reboot."
+			echo "- prepare reboot."
 			/usr/bin/sync; /usr/sbin/reboot
 		}
 
@@ -53,7 +61,7 @@ prepare_kdump()
 	#[ -f "${K_REBOOT}" ] && rm -f "${K_REBOOT}"
 
 	# install kexec-tools package
-	rpm -q kexec-tools || yum install -y kexec-tools || echo "kexec-tools install failed."
+	rpm -q kexec-tools || yum install -y kexec-tools || echo "- kexec-tools install failed."
 
 	# enable kdump service: systemd | sys-v
 	/bin/systemctl enable kdump.service || /sbin/chkconfig kdump on
@@ -62,13 +70,12 @@ prepare_kdump()
 restart_kdump()
 {
 	echo "- retart kdump service."
-	grep -v ^# "${K_CONFIG}"
 	# delete kdump.img in /boot directory
 	rm -f /boot/initrd-*kdump.img || rm -f /boot/initramfs-*kdump.img
+	touch "${K_CONFIG}"
 	/usr/bin/kdumpctl restart 2>&1 | tee /tmp/kdump_restart.log || /sbin/service kdump restart 2>&1 | tee /tmp/kdump_restart.log
-	rc=$?
-	[ $rc -ne 0 ] && echo "- kdump service start failed." && exit 1
-	echo "- kdump service start normal."
+	[ $? -ne 0 ] && echo "- kdump service start failed." && exit 1
+	echo "- kdump service start successful."
 }
 
 # Config default kdump memory
@@ -85,6 +92,59 @@ def_kdump_mem()
 	echo "$args"
 }
 
+# create label
+label_fs()
+{
+	local fstype="$1"
+	local dev="$2"
+	local mp="$3"
+	local label=$4
+
+	case $fstype in
+		xfs)
+			umount $dev &&
+			xfs_admin -L $label $dev &&
+			mount $dev $mp
+			;;
+		ext[234])
+			e2label $dev $label
+			;;
+		btrfs)
+			umount $dev &&
+			btrfs filesystem label $dev $label &&
+			mount $dev $mp
+			;;
+		*)
+			false
+			;;
+	esac
+	
+	if [ $? -ne 0 ]; then
+		echo "- failed to label $fstype with $label on $dev" && exit 1
+	fi
+}
+
+# append option to kdump.conf
+append_config()
+{
+	echo "- modifying /etc/kdump.conf"
+	if [ $# -eq 0 ]; then
+		echo "- Nothing to append."
+		return 0
+	fi
+
+	while [ $# -gt 0 ]; do
+		echo "- removing existed old ${1%%[[:space:]]*} settings."
+		sed -i "/^${1%%[[:space:]]*}/d" ${K_CONFIG}
+		echo "- adding new arguments '$1'."
+		echo "$1" >> "${K_CONFIG}"
+		shift
+	done
+	
+	echo "- show kdump.conf file."
+	cat "${K_CONFIG}"
+}
+
 # config kdump.conf
 configure_kdump_conf()
 {
@@ -96,32 +156,56 @@ configure_kdump_conf()
 	# config_post, config_pre
 	# config_extra
 	# config_default
-	echo "config kdump configuration"
-}
+	echo "- config kdump configuration"
+	local dev=""
+	local fstype=""
+	local target=""
 
-config_raw()
-{
-	echo "config raw"
-}
+	# get dev, fstype
+	if [ "yes" == "$RAW" -a -f "${K_RAW}" ]; then
+		dev=`cut -d" " -f1 ${K_RAW}`
+		fstype=`cut -d" " -f2 ${K_RAW}`
+		rm -f ${K_RAW}
+		mkfs.$fstype $dev && mount $dev $MP
+	else
+		dev=`findmnt -kcno SOURCE $MP`
+		fstype=`findmnt -kcno FSTYPE $MP`
+	fi
+	
+	case $OPTION in
+		uuid)
+			# some partitions have both UUID= and PARTUUID=, we only want UUID=
+			target=`blkid $dev -o export -c /dev/null | grep '\<UUID='`
+			;;
+		label)
+			target=`blkid $dev -o export -c /dev/null | grep LABEL=`
+			if [ -z "$target" ]; then
+				label_fs $fstype $dev $MP $LABEL
+				target=`blkid $dev -o export -c /dev/null | grep LABEL=`
+			fi
+			;;
+		softlink)
+			ln -s $dev $dev-softlink
+			target=$dev-softlink
+			;;
+		*)
+			target=$dev
+			;;
+	esac
+	
+	if [ "yes" == "$RAW" -a -n "$target" ]; then
+		append_config "raw $target"
+		sed -i "/[ \t]\\$MP[ \t]/d" /etc/fstab
+		echo "$dev $fstype" > ${K_RAW}
+	elif [ -n "$fstype" -a -n "$target" ]; then
+		append_config "$fstype $target" "path $KPATH"
+		mkdir -p $MP/$KPATH
+		# tell crash analyse procedure where to find vmcore
+		echo "${MP%/}${KPATH}" > ${K_PATH}
+	else
+		echo "- Null dump_device/uuid/label or type wrong." && exit 1
+	fi
 
-config_dev_name()
-{
-	echo "config device name"
-}
-
-config_dev_uuid()
-{
-	echo "config device uuid"
-}
-
-config_dev_label()
-{
-	echo "config device label"
-}
-
-config_dev_softlink()
-{
-	echo "config device softlink"
 }
 
 config_nfs()
@@ -182,18 +266,7 @@ config_default()
 # trigger methods, the common methods is 'echo c > /proc/sysrq'
 trigger_echo_c()
 {
-	# Please disable avc check if you run this case in beaker/ci.
-	if [ ! -f ${C_REBOOT} ]; then
-		prepare_kdump
-		restart_kdump
-		echo "- boot to 2nd kernel"
-		touch "${C_REBOOT}"
-		sync
-		echo c > /proc/sysrq-trigger
-		echo "- can't arrive here!"
-	else
-		rm -f "${C_REBOOT}"
-	fi
+	echo "trigger by echo c > /proc/sysrq-trigger"
 }
 
 trigger_AltSysC()
