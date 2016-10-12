@@ -88,6 +88,12 @@ static int altsysrq_write_proc(struct file *filep, const char *buf, unsigned lon
         return 1;
 }
 
+static const struct file_operations altsysrq_proc_fops = {
+        .owner = THIS_MODULE,
+        .read = NULL,
+        .write = altsysrq_write_proc,
+};
+
 static int __init altsysrq_init(void)
 {
         int result;
@@ -100,12 +106,20 @@ static int __init altsysrq_init(void)
                 return result;
         }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)
         entry = create_proc_entry(PROCNAME, S_IWUGO, NULL);
         if (!entry) {
                 altsysrq_unregister_device(g_dev);
                 return -EBUSY;
         }
         entry->write_proc = altsysrq_write_proc;
+#else
+        if ((entry = proc_create_data(PROCNAME, S_IWUGO, NULL,
+                                &altsysrq_proc_fops, NULL)) == NULL) {
+                altsysrq_unregister_device(g_dev);
+                return -ENOMEM;
+        }
+#endif
 
         return 0;
 }

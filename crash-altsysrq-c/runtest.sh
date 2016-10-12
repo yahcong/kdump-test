@@ -9,7 +9,7 @@ load_altsysrq_driver()
 	cp ../altsysrq.c .
 	cp ../Makefile.altsysrq Makefile
 	unset ARCH
-	make && insmod ./altsysrq.ko || echo "- Make altsysrq module fail" && exit 1
+	make && insmod ./altsysrq.ko || (echo "- make/insmod altsysrq module fail" && exit 1)
 	export ARCH=$(uname -i)
 	cd ..
 }
