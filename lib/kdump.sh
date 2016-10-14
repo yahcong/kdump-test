@@ -8,8 +8,8 @@ K_ARCH="$(uname -m)"
 K_DEFAULT_PATH="/var/crash"
 K_REBOOT="./K_REBOOT"
 K_CONFIG="/etc/kdump.conf"
-K_PATH="/KDUMP-PATH"
-K_RAW="/KDUMP-RAW"
+K_PATH="./KDUMP-PATH"
+K_RAW="./KDUMP-RAW"
 
 C_REBOOT="./C_REBOOT"
 
