@@ -17,7 +17,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-((INCLUDE_LOG_SH)) && return ||INCLUDE_LOG_SH=1
+((LIB_LOG_SH)) && return ||LIB_LOG_SH=1
 
 readonly K_LOG_FILE="./result.log"
 
@@ -106,6 +106,7 @@ ready_to_exit()
 {
   report_file "${K_CONFIG}"
   report_file "${K_LOG_FILE}"
+  cp "${K_BACKUP_DIR}"/kdump.conf /etc/kdump.conf
 }
 
 #############################################
@@ -119,11 +120,11 @@ ready_to_exit()
 ###########################################
 reboot_system()
 {
-  sync
+  /usr/bin/sync
   if [ -z "${TEST}" ]; then
     rhts-reboot
   else
-    reboot
+    /usr/sbin/reboot
   fi
 }
 
