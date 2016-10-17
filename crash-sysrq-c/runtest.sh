@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
 
 . ../lib/kdump.sh
+. ../lib/crash.sh
+. ../lib/log.sh
 
-crash-sysrq-c()
+
+C_REBOOT="./C_REBOOT"
+
+crash_sysrq_c()
 {
 	# Maybe need disable avc check
-	if [ ! -f ${C_REBOOT} ]; then
+	if [ ! -f "${C_REBOOT}" ]; then
 		prepare_kdump
 		# add config kdump.conf in here if need
 		restart_kdump
-		echo "- boot to 2nd kernel"
+		log_info "- boot to 2nd kernel"
 		touch "${C_REBOOT}"
 		sync
 		echo c > /proc/sysrq-trigger
@@ -18,12 +23,9 @@ crash-sysrq-c()
 	fi
 
 	# add check vmcore test in here if need
-	echo "- get vmcore file"
-	ls -lt ${K_DEFAULT_PATH}/*/ | grep vmcore
-	[ $? -ne 0 ] && echo "- get vmocre failed!" && exit 1
-	echo "- get vmcore successful!"
-
+	check_vmcore_file
+	ready_to_exit
 }
 
-echo "- start"
-crash-sysrq-c
+log_info "- start"
+crash_sysrq_c

@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 
 # This file will cover special test evnironment,
 # like special network, special storage env, etc.
