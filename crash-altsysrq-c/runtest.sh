@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
 . ../lib/kdump.sh
+. ../lib/crash.sh
+. ../lib/log.sh
+
+C_REBOOT="./C_REBOOT"
 
 load_altsysrq_driver()
 {
@@ -9,31 +13,31 @@ load_altsysrq_driver()
 	cp ../altsysrq.c .
 	cp ../Makefile.altsysrq Makefile
 	unset ARCH
-	make && insmod ./altsysrq.ko || (echo "- make/insmod altsysrq module fail" && exit 1)
-	export ARCH=$(uname -i)
+    ( make && insmod ./altsysrq.ko )|| log_error "- make/insmod altsysrq module fail"
+	export ARCH
+    ARCH=$(uname -i)
 	cd ..
 }
 
-crash-altsysrq-c()
+crash_altsysrq_c()
 {
 	if [ ! -f ${C_REBOOT} ]; then
+        prepare_kdump
+        restart_kdump
 		load_altsysrq_driver
 		touch "${C_REBOOT}"
-		echo "- boot to 2nd kernel"
+		log_info "- boot to 2nd kernel"
 		echo 1 > /proc/sys/kernel/sysrq
 		sync
 		echo c > /proc/driver/altsysrq
-		echo "- can't arrive here!"
+		log_error "- can't arrive here!"
 	else
 		rm "${C_REBOOT}"
 	fi
 
-	# check vmcore file
-	echo "- get vmcore file"
-	ls -lt ${K_DEFAULT_PATH}/*/ | grep vmcore
-	[ $? -ne 0 ] && echo "- get vmocre failed!" && exit 1
-	echo "- get vmcore successful!"
+    check_vmcore_file
+    ready_to_exit
 }
 
-echo "- start"
-crash-altsysrq-c
+log_info "- start"
+crash_altsysrq_c
