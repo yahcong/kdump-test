@@ -129,7 +129,7 @@ reboot_system()
 {
     /usr/bin/sync
     if [ ! -z "${TEST}" ]; then
-    rhts-reboot
+        rhts-reboot
     else
         /usr/sbin/reboot
     fi

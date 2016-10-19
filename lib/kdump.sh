@@ -225,6 +225,24 @@ configure_kdump_conf()
 
 }
 
+make_module()
+{
+    local name
+    name=$1
+    if [[ -z "${name}" ]];then
+        log_error "Please input your module name"
+    fi
+    mkdir "${name}"
+    mv "${name}".c "${name}/"
+    mv Makefile."${name}" "${name}/Makefile"
+
+    unset ARCH
+
+    make -C "${name}/" || log_error "Can not make module"
+    export ARCH
+    ARCH=$(uname -m)
+}
+
 config_nfs()
 {
     echo "config nfs target"
