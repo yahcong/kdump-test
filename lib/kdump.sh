@@ -4,7 +4,8 @@
 # but we can check /sys/kernel/kexec_crash_size value, if equal to zero, so we need
 # change kernel parameter crashkernel=<>M or other value
 
-((LIB_KDUMP_SH)) && return ||LIB_KDUMP_SH=1
+((LIB_KDUMP_SH)) && return || LIB_KDUMP_SH=1
+. ../lib/log.sh
 
 K_ARCH="$(uname -m)"
 K_DEFAULT_PATH="/var/crash"
@@ -23,10 +24,10 @@ RAW=${RAW:-"no"}
 
 install_rpm_package()
 {
-    if [[ $# -gt 0 ]];then
-        yum install -y "$@" || log_error "Can not install rpm: $*"
-        log_info "Install $* successful"
-    fi
+	if [[ $# -gt 0 ]];then
+		yum install -y "$@" || log_error "Can not install rpm: $*"
+		log_info "Install $* successful"
+	fi
 }
 
 

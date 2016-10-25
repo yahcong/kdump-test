@@ -17,7 +17,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-((LIB_LOG_SH)) && return ||LIB_LOG_SH=1
+((LIB_LOG_SH)) && return || LIB_LOG_SH=1
 
 readonly K_LOG_FILE="./result.log"
 
@@ -32,14 +32,14 @@ readonly K_LOG_FILE="./result.log"
 #   None
 ############################ 
 log() {
-  local level="$1"
-  shift
-  echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] $level $*" >> "${K_LOG_FILE}"
-  if [[ $level == "ERROR" ]]; then
-    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] $level $*" >&2
-  else
-    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] $level $*"
-  fi
+	local level="$1"
+	shift
+	echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] $level $*" >> "${K_LOG_FILE}"
+	if [[ $level == "ERROR" ]]; then
+		echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] $level $*" >&2
+	else
+		echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] $level $*"
+	fi
 }
 
 ############################
@@ -53,14 +53,14 @@ log() {
 ############################ 
 report_file()
 {
-    local filename="$1"
-    if [[ -f "${filename}" ]]; then
-        if [ -z "${JOBID}" ] && [ -z "${TASKID}" ]; then
-            rhts-submit-log -l "$filename"
-        fi
-    else
-        log_info "file ${filename} not exist!"
-    fi
+	local filename="$1"
+	if [[ -f "${filename}" ]]; then
+		if [ -z "${JOBID}" ] && [ -z "${TASKID}" ]; then
+			rhts-submit-log -l "$filename"
+		fi
+	else
+		log_info "file ${filename} not exist!"
+	fi
 }
 
 ###########################
@@ -74,7 +74,7 @@ report_file()
 ##########################
 log_info() 
 {
-    log "INFO" "$@"
+	log "INFO" "$@"
 }
 
 #############################################
@@ -88,9 +88,9 @@ log_info()
 #############################################
 log_error()
 {
-    log "ERROR" "$@"
-    ready_to_exit
-    exit 1
+	log "ERROR" "$@"
+	ready_to_exit 1
+	exit 1
 }
 
 ##############################################
@@ -104,9 +104,16 @@ log_error()
 ##############################################
 ready_to_exit()
 {
-  report_file "${K_CONFIG}"
-  report_file "${K_LOG_FILE}"
-  cp "${K_BACKUP_DIR}"/kdump.conf /etc/kdump.conf
+	report_file "${K_CONFIG}"
+	report_file "${K_LOG_FILE}"
+	cp "${K_BACKUP_DIR}"/kdump.conf /etc/kdump.conf
+
+	if [[ $1 == "1" ]]; then
+		report_result "${TEST}" "FAIL" "1"
+		rhts-abort -t recipeset
+	else
+		report_result "${TEST}" "PASS" "0"
+	fi
 }
 
 #############################################
@@ -120,11 +127,10 @@ ready_to_exit()
 ###########################################
 reboot_system()
 {
-  /usr/bin/sync
-  if [ -z "${TEST}" ]; then
-    rhts-reboot
-  else
-    /usr/sbin/reboot
-  fi
+	/usr/bin/sync
+	if [ -z "${TEST}" ]; then
+		rhts-reboot
+	else
+		/usr/sbin/reboot
+	fi
 }
-
