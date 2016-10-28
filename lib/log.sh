@@ -128,7 +128,7 @@ ready_to_exit()
 reboot_system()
 {
 	/usr/bin/sync
-	if [ -z "${TEST}" ]; then
+	if [ ! -z "${TEST}" ]; then
 		rhts-reboot
 	else
 		/usr/sbin/reboot

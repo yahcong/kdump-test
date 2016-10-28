@@ -15,7 +15,6 @@ K_PATH="./KDUMP-PATH"
 K_RAW="./KDUMP-RAW"
 K_BACKUP_DIR="./backup"
 
-
 KPATH=${KPATH:-"${K_DEFAULT_PATH}"}
 OPTION=${OPTION:-}
 MP=${MP:-/}
@@ -279,35 +278,4 @@ config_extra()
 config_default()
 {
 	echo "config default option"
-}
-
-# trigger methods, the common methods is 'echo c > /proc/sysrq'
-trigger_echo_c()
-{
-	echo "trigger by echo c > /proc/sysrq-trigger"
-}
-
-trigger_AltSysC()
-{
-	echo "trigger by AltSysC button"
-}
-
-tirgger_kernel_BUG()
-{
-	echo "trigger by kernel function BUG()"
-}
-
-trigger_kernel_panic()
-{
-	echo "trigger by kernel function panic()"
-}
-
-trigger_kernel_lockup()
-{
-	echo "trigger by hard lockup"
-}
-
-trigger_kernel_panic_on_warn()
-{
-	echo "trigger by kernel function panic_on_warn()"
 }
