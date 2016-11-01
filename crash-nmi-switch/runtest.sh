@@ -43,9 +43,7 @@ crash_nmi_switch()
 
     check_vmcore_file
     ready_to_exit
-
 }
 
 log_info "- start"
 crash_nmi_switch
-
