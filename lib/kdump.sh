@@ -87,7 +87,7 @@ prepare_kdump()
 
 restart_kdump()
 {
-    log_info "- retart kdump service."
+    log_info "- restart kdump service."
     # delete kdump.img in /boot directory
     rm -f /boot/initrd-*kdump.img || rm -f /boot/initramfs-*kdump.img
     touch "${K_CONFIG}"

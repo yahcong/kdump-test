@@ -101,6 +101,8 @@ log_error()
 #   $1 - Error Output Info
 # Return:
 #   None
+# Other:
+#   report_result|rhts-abort are included beaker-lib.
 ##############################################
 ready_to_exit()
 {
@@ -108,11 +110,20 @@ ready_to_exit()
     report_file "${K_LOG_FILE}"
     cp "${K_BACKUP_DIR}"/kdump.conf /etc/kdump.conf
 
-    if [[ $1 == "1" ]]; then
-    report_result "${TEST}" "FAIL" "1"
-    rhts-abort -t recipeset
+    if [ -z "${TEST}" ]; then
+        if [[ $1 == "1" ]]; then
+            echo "- [FAIL] Please check test results!"
+            exit 1
+        else
+            echo "- [PASS] All test case to run successfully!"
+        fi
     else
-        report_result "${TEST}" "PASS" "0"
+        if [[ $1 == "1" ]]; then
+            report_result "${TEST}" "FAIL" "1"
+            rhts-abort -t recipeset
+        else
+            report_result "${TEST}" "PASS" "0"
+        fi
     fi
 }
 
