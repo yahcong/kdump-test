@@ -102,13 +102,27 @@ restart_kdump()
 def_kdump_mem()
 {
     local args=""
-    if [[ "${K_ARCH}" = "x86_64" ]]; then args="crashkernel=160M"
-    elif [[ "${K_ARCH}" = "ppc64" ]]; then args="crashkernel=320M"
-    elif [[ "${K_ARCH}" = "s390x" ]]; then args="crashkernel=160M"
-    elif [[ "${K_ARCH}" = "ppc64le" ]]; then args="crashkernel=320M"
-    elif [[ "${K_ARCH}" = "aarch64" ]]; then args="crashkernel=2048M"
-    elif [[ "${K_ARCH}" = i?86 ]]; then args="crashkernel=128M"
-    fi
+
+    case "${K_ARCH}" in
+        "x86_64")
+            args="crashkernel=160M"
+            ;;
+        "ppc64")
+            args="crashkernel=320M"
+            ;;
+        "ppc64le")
+            args="crashkernel=320M"
+            ;;
+        "s390x")
+            args="crashkernel=160M"
+            ;;
+        "aarch64")
+            args="crashkernel=2048M"
+            ;;
+        *)
+            ;;
+    esac
+
     echo "$args"
 }
 
