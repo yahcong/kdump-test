@@ -282,7 +282,7 @@ config_nfs_ipv6()
 ########################################
 prepare_for_multihost()
 {
-    which nc || yum install nmap-ncat || yum nc || log_error "Failed to install nc client"
+    which nc || yum install -y nmap-ncat || yum install -y nc || log_error "Failed to install nc client"
 }
 #########################################
 # Config SSH-Kdump in server and client

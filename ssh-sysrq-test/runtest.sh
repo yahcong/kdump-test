@@ -25,6 +25,7 @@ ssh_sysrq_test()
 
     if [[ ! -f "${C_REBOOT}" ]]; then
         prepare_kdump
+        prepare_for_multihost
         config_ssh 
         restart_kdump
         if [[ $(get_role) == "client" ]]; then
