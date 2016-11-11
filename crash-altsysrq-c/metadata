@@ -1,0 +1,10 @@
+[General]
+name=kdump-test/crash-altsysrq-c
+owner="Qiao Zhao"
+description="kfump-test for crash-altsysrq-c"
+
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true
