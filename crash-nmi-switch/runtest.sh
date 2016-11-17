@@ -25,8 +25,8 @@ C_REBOOT="./C_REBOOT"
 crash_nmi_switch()
 {
     if [[ ! -f "${C_REBOOT}" ]]; then
-        prepare_kdump
-        restart_kdump
+        kdump_prepare
+        kdump_restart
         install_rpm_package "OpenIPMI" "ipmitool"
         log_info "- Load IPMI modules"
         systemctl enable ipmi

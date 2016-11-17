@@ -22,8 +22,8 @@ load_altsysrq_driver()
 crash_altsysrq_c()
 {
     if [ ! -f ${C_REBOOT} ]; then
-        prepare_kdump
-        restart_kdump
+        kdump_prepare
+        kdump_restart
         load_altsysrq_driver
         touch "${C_REBOOT}"
         log_info "- boot to 2nd kernel"

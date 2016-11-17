@@ -24,10 +24,10 @@ ssh_sysrq_test()
     export CLIENTS=${CLIENTS}
 
     if [[ ! -f "${C_REBOOT}" ]]; then
-        prepare_kdump
+        kdump_prepare
         prepare_for_multihost
         config_ssh 
-        restart_kdump
+        kdump_restart
         if [[ $(get_role) == "client" ]]; then
             log_info "Client boot to 2nd kernel" 
             touch "${C_REBOOT}"

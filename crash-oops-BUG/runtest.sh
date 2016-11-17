@@ -19,14 +19,13 @@
 . ../lib/crash.sh
 . ../lib/log.sh
 
-
 C_REBOOT="./C_REBOOT"
 
 crash_oops_BUG()
 {
     if [[ ! -f "${C_REBOOT}" ]]; then
-        prepare_kdump
-        restart_kdump
+        kdump_prepare
+        kdump_restart
         make_module "oops_BUG"
         insmod oops_BUG/oops_BUG.ko || log_error "Failed to insmod module"
 

@@ -38,7 +38,7 @@ prepare_env()
     cp /etc/kdump.conf "${K_BACKUP_DIR}"/
 }
 
-prepare_kdump()
+kdump_prepare()
 {
     if [ ! -f "${K_REBOOT}" ]; then
         prepare_env
@@ -88,7 +88,7 @@ prepare_kdump()
     /bin/systemctl enable kdump.service || /sbin/chkconfig kdump on || log_error "Error to enable Kdump"
 }
 
-restart_kdump()
+kdump_restart()
 {
     log_info "- restart kdump service."
     # delete kdump.img in /boot directory
@@ -154,7 +154,7 @@ label_fs()
     esac
     
     if [ $? -ne 0 ]; then
-        echo "- failed to label $fstype with $label on $dev" && exit 1
+        log_err "- failed to label $fstype with $label on $dev"
     fi
 }
 

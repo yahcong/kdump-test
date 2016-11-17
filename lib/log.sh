@@ -112,10 +112,10 @@ ready_to_exit()
 
     if [ -z "${TEST}" ]; then
         if [[ $1 == "1" ]]; then
-            echo "- [FAIL] Please check test results!"
+            log_info "- [FAIL] Please check test results!"
             exit 1
         else
-            echo "- [PASS] All test case to run successfully!"
+            log_info "- [PASS] All test case to run successfully!"
         fi
     else
         if [[ $1 == "1" ]]; then

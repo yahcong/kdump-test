@@ -10,9 +10,9 @@ crash_sysrq_c()
 {
     # Maybe need disable avc check
     if [ ! -f "${C_REBOOT}" ]; then
-        prepare_kdump
+        kdump_prepare
         # add config kdump.conf in here if need
-        restart_kdump
+        kdump_restart
         log_info "- boot to 2nd kernel"
         touch "${C_REBOOT}"
         sync
