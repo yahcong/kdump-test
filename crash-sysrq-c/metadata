@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/crash-sysrq-c
+owner="Qiao Zhao"
+description="kdump-test for crash-sysrq-c"
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true
