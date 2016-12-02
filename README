@@ -16,6 +16,8 @@ Follow the steps to setup kdump test suite.
 	* kernel-debuginfo
 2. Make sure dump target has enough space to save vmcore. (size of physical memory)
 3. Modify configuration file /etc/kdump.conf.
-4. Run "./runtest.sh" or type "make run".
+4. Run test case by restraint.
 
 The details please see the test case.
+
+
