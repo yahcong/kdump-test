@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/crash-oops-warn
+owner="Xiaowu Wu"
+description="kdump-test for crash-oops-warn"
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true
