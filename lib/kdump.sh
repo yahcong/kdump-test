@@ -250,8 +250,8 @@ make_module()
         log_error "Please input your module name"
     fi
     mkdir "${name}"
-    mv "${name}".c "${name}/"
-    mv Makefile."${name}" "${name}/Makefile"
+    cp "${name}".c "${name}/"
+    cp Makefile."${name}" "${name}/Makefile"
 
     unset ARCH
 
