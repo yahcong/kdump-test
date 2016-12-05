@@ -21,6 +21,19 @@
 
 readonly K_LOG_FILE="./result.log"
 
+# check if system is beaker environment.
+is_beaker_env()
+{
+    ls -l /usr/bin/rhts-environment.sh
+    if [ $? -eq 0 ]; then
+        . /usr/bin/rhts-environment.sh
+        return 0
+    else
+        log_info "Is not beaker environment."
+        return 1
+    fi
+}
+
 ############################
 # Print Log info into ${K_LOG_FILE}
 # Globals:
@@ -30,8 +43,9 @@ readonly K_LOG_FILE="./result.log"
 #   $2 - Log message
 # Return:
 #   None
-############################ 
-log() {
+############################
+log()
+{
     local level="$1"
     shift
     echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] $level $*" >> "${K_LOG_FILE}"
@@ -55,8 +69,10 @@ report_file()
 {
     local filename="$1"
     if [[ -f "${filename}" ]]; then
-        if [ ! -z "${JOBID}" ]; then
+        if is_beaker_env; then
             rhts-submit-log -l "$filename"
+        else
+            cat ${filename}
         fi
     else
         log_info "file ${filename} not exist!"
@@ -108,21 +124,20 @@ ready_to_exit()
 {
     report_file "${K_CONFIG}"
     report_file "${K_LOG_FILE}"
-    cp "${K_BACKUP_DIR}"/kdump.conf /etc/kdump.conf
 
-    if [ -z "${TEST}" ]; then
-        if [[ $1 == "1" ]]; then
-            log_info "- [FAIL] Please check test results!"
-            exit 1
-        else
-            log_info "- [PASS] All test case to run successfully!"
-        fi
-    else
+    if is_beaker_env; then
         if [[ $1 == "1" ]]; then
             report_result "${TEST}" "FAIL" "1"
             rhts-abort -t recipeset
         else
             report_result "${TEST}" "PASS" "0"
+        fi
+    else
+        if [[ $1 == "1" ]]; then
+            log_info "- [FAIL] Please check test results!"
+            exit 1
+        else
+            log_info "- [PASS] All test case to run successfully!"
         fi
     fi
 }
@@ -138,10 +153,11 @@ ready_to_exit()
 ###########################################
 reboot_system()
 {
-    /usr/bin/sync
-    if [ ! -z "${TEST}" ]; then
-        rhts-reboot
+    /bin/sync
+
+    if is_beaker_env; then
+        /usr/bin/rhts-reboot
     else
-        /usr/sbin/reboot
+        /sbin/reboot
     fi
 }

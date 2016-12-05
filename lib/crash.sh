@@ -7,7 +7,7 @@
 
 check_vmcore_file()
 {
-    log_info "- get vmocre file"
+    log_info "- get vmcore file"
     find /var/crash/ -newer /etc/kdump.conf -name "vmcore*" -type f | grep vmcore
     [ $? -ne 0 ] && log_error "- get vmcore failed!"
     log_info "- get vmcore successful!"

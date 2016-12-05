@@ -27,7 +27,7 @@ RAW=${RAW:-"no"}
 install_rpm_package()
 {
     if [[ $# -gt 0 ]];then
-    yum install -y "$@" || log_error "Can not install rpm: $*"
+        yum install -y "$@" || log_error "Can not install rpm: $*"
         log_info "Install $* successful"
     fi
 }
