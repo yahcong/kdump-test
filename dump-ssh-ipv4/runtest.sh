@@ -28,43 +28,60 @@ C_REBOOT="./C_REBOOT"
 ssh_sysrq_test()
 {
 
-    # Check parameter
+    # Check if servers/client hostname/ip are provided from cmdline
     if [[ ! -z "$1" ]]; then
         ${SERVERS:=$1}
-    fi 
+    fi
     if [[ ! -z "$2" ]]; then
         ${CLIENTS:=$2}
     fi
     if [ -z "${SERVERS}" -o -z "${CLIENTS}" ]; then
-        log_error "Unknow Server or Client hostname or address"
+        log_error "No Server or Client hostname"
     fi
+
     export SERVERS=${SERVERS}
     export CLIENTS=${CLIENTS}
+
+    # port used for client/server sync
+    local done_sync_port
+    done_sync_port=35413
 
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare
         prepare_for_multihost
-        config_ssh 
-        kdump_restart
+        config_ssh
+
         if [[ $(get_role) == "client" ]]; then
-            log_info "Client boot to 2nd kernel" 
+            kdump_restart
+            log_info "- Triggering crash."
             touch "${C_REBOOT}"
             sync
+            # triger panic
             echo c > /proc/sysrq-trigger
-            # Stop here
-        fi 
 
+            sleep 3600
+            log_info "- Failed! Crash is not triggered after waiting for 3600s."
+            log_info "- Notifying server that test is done at client."
+            send_notify_signal "${SERVERS}" ${done_sync_port}
+            log_error "- Failed to trigger crash."
+        fi
         if [[ $(get_role) == "server" ]]; then
-            trigger_wait_at_server 
+
+            log_info "- Waiting for signal at ${done_sync_port} from client that test is done at client."
+            wait_for_signal ${done_sync_port}
+
+            log_info "- Checking vmcore on ssh server."
             check_vmcore_file
         fi
     else
         rm -f "${C_REBOOT}"
-        trigger_notify_at_client "${SERVERS}"
-        log_info " Client successful crashed" 
+
+        log_info "- Sending signal server that crash is done at client."
+        send_notify_signal "${SERVERS}" ${done_sync_port}
+        log_info "- Client is rebooted back to 1st kernel successfully."
     fi
     ready_to_exit
 }
 
-log_info "- start"
+log_info "- Start"
 ssh_sysrq_test "$@"

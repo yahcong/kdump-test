@@ -27,15 +27,18 @@ C_REBOOT="./C_REBOOT"
 
 crash_sysrq_c()
 {
-    # Maybe need disable avc check
+    # May need disable avc check
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
         # add config kdump.conf in here if need
         kdump_restart
-        log_info "- boot to 2nd kernel"
         touch "${C_REBOOT}"
         sync
+        log_info "- Triggering crash."
         echo c > /proc/sysrq-trigger
+
+        sleep 3600
+        log_error "- Failed to trigger crash after waiting for 3600s."
     else
         rm -f "${C_REBOOT}"
     fi
@@ -45,5 +48,5 @@ crash_sysrq_c()
     ready_to_exit
 }
 
-log_info "- start"
+log_info "- Start"
 crash_sysrq_c

@@ -32,25 +32,24 @@ crash-oops-warn()
         make_module "crash-warn"
 
         # Set panic_on_warn
-        log_info "- # echo 1 > /proc/sys/kernel/panic_on_warn"
+        log_info "- # echo 1 > /proc/sys/kernel/panic_on_warn."
         echo 1 > /proc/sys/kernel/panic_on_warn
         if [[ $? -ne 0 ]]; then
             log_error "Error to echo 1 > /proc/sys/kernel/panic_on_warn"
         fi
 
         # Trigger panic_on_warn
-        log_info "Boot to 2nd kernel"
         touch "${C_REBOOT}"
         sync
-
-        insmod crash-warn/crash-warn.ko || log_error "Failed to insmod module"
+        log_info "- Triggering crash."
+        insmod crash-warn/crash-warn.ko || log_error "Failed to insmod module."
         if [ $? -ne 0 ]; then
             log_error "Fail to trigger panic_on_warn"
         fi
 
-        # Wait for another 3600 sec
+        # Wait for a while
         sleep 3600
-        log_error "Error after sleeping 3600, it still alive"
+        log_error "- Failed to trigger panic_on_warn after waiting for 3600s."
 
     else
         rm -f "${C_REBOOT}"
@@ -61,5 +60,5 @@ crash-oops-warn()
     ready_to_exit
 }
 
-log_info "Start"
+log_info "- Start"
 crash-oops-warn

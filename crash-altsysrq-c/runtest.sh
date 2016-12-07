@@ -30,13 +30,16 @@ crash_altsysrq_c()
         kdump_prepare
         kdump_restart
         make_module "altsysrq"
-        insmod ./altsysrq/altsysrq.ko || log_error "- Fail to insmod altsysrq"
+        insmod ./altsysrq/altsysrq.ko || log_error "- Fail to insmod altsysrq."
+
         touch "${C_REBOOT}"
-        log_info "- boot to 2nd kernel"
+        sync
+        log_info "- Triggering crash."
+        
         echo 1 > /proc/sys/kernel/sysrq
         sync
         echo c > /proc/driver/altsysrq
-        log_error "- can't arrive here!"
+        log_error "- Failed to trigger panic!"
     else
         rm "${C_REBOOT}"
     fi
@@ -45,5 +48,5 @@ crash_altsysrq_c()
     ready_to_exit
 }
 
-log_info "- start"
+log_info "- Start"
 crash_altsysrq_c

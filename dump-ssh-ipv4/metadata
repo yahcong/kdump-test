@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/dump-ssh-ipv4
+owner="Qiao Zhao"
+description="kdump-test for dumping via ssh ipv4"
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true

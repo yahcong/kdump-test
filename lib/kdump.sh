@@ -1,43 +1,50 @@
 #!/usr/bin/env bash
 
-# In Fedora and upstream kernel, can't support crashkernel=auto kernel parameter,
-# but we can check /sys/kernel/kexec_crash_size value, if equal to zero, so we need
-# change kernel parameter crashkernel=<>M or other value
-
 ((LIB_KDUMP_SH)) && return || LIB_KDUMP_SH=1
 . ../lib/log.sh
 
 K_ARCH="$(uname -m)"
-K_DEFAULT_PATH="/var/crash"
 K_REBOOT="./K_REBOOT"
-K_CONFIG="/etc/kdump.conf"
 K_PATH="./KDUMP-PATH"
 K_RAW="./KDUMP-RAW"
 K_BACKUP_DIR="./backup"
+
+K_CONFIG="/etc/kdump.conf"
+K_DEFAULT_PATH="/var/crash"
+K_SSH_CONFIG="${HOME}/.ssh/config"
+
 readonly K_LOCK_AREA="/root"
 readonly K_LOCK_SSH_ID_RSA=/root/.ssh/id_rsa_kdump_test
 readonly K_RETRY_COUNT=1000
 
-KPATH=${KPATH:-"${K_DEFAULT_PATH}"}
+KPATH=${KPATH:-${K_DEFAULT_PATH}}
 OPTION=${OPTION:-}
 MP=${MP:-/}
 LABEL=${LABEL:-label-kdump}
-RAW=${RAW:-"no"}
+RAW=${RAW:-no}
+
 
 install_rpm_package()
 {
     if [[ $# -gt 0 ]];then
-        yum install -y "$@" || log_error "Can not install rpm: $*"
-        log_info "Install $* successful"
+        yum install -y "$@" || log_error "- Can not install rpm: $*"
+        log_info "- Installed $* successfully"
     fi
 }
 
+# Backup kdump.conf
 prepare_env()
 {
     mkdir -p "${K_BACKUP_DIR}"
     cp /etc/kdump.conf "${K_BACKUP_DIR}"/
 }
 
+# Prepare for kdump service
+# Including:
+#   Update kernel cmdline for kernel memory and default vmlinuz(x)
+#   Set KDUMP_IMG in /etc/sysconfig/kdump
+#   Install kexec-tools
+#   Enable kdump service
 kdump_prepare()
 {
     if [ ! -f "${K_REBOOT}" ]; then
@@ -49,53 +56,59 @@ kdump_prepare()
 
         # for uncompressed kernel, i.e. vmlinux
         [[ "${default}" == *vmlinux* ]] && {
-            log_info "- modifying /etc/sysconfig/kdump properly for 'vmlinux'."
+            log_info "- Modifying /etc/sysconfig/kdump properly for 'vmlinux'."
             sed -i 's/\(KDUMP_IMG\)=.*/\1=vmlinux/' /etc/sysconfig/kdump
         }
 
-        # check /sys/kernel/kexec_crash_size value and update if need.
-        # need restart system when you change this value.
+        # In Fedora and upstream kernel, crashkernel=auto is not suppored.
+        # By checking if /sys/kernel/kexec_crash_size is zero, we can tell if
+        # auto crashkernel is supported and if crash memory is allocated.
+
+        # If it is not supported, we need to specify the memory by changing
+        # kernel param to crashkernel=<>M, and reboot system.
+
         grep -q 'crashkernel' <<< "${KERARGS}" || {
                 [ "$(cat /sys/kernel/kexec_crash_size)" -eq 0 ] && {
-                    log_info "MemTotal is:" "$(grep MemTotal /proc/meminfo)"
+                    log_info "- MemTotal is:" "$(grep MemTotal /proc/meminfo)"
                     KERARGS+="$(def_kdump_mem)"
                 }
         }
 
         [ "${KERARGS}" ] && {
-            # need create a file/flag to sign we have do this.
+            # touch a file to mark system's been rebooted for kernel cmdline chagne.
             touch ${K_REBOOT}
-            log_info "- changing boot loader."
+            log_info "- Changing boot loader."
             {
                 /sbin/grubby    \
                     --args="${KERARGS}"    \
                     --update-kernel="${default}" &&
                 if [ "${K_ARCH}" = "s390x" ]; then zipl; fi
             } || {
-                log_error "- change boot loader error!"
+                log_error "- Change boot loader error!"
             }
-            log_info "- prepare reboot."
+            log_info "- Reboot system for system preparing."
             reboot_system
         }
 
     fi
-    #[ -f "${K_REBOOT}" ] && rm -f "${K_REBOOT}"
 
     # install kexec-tools package
-    rpm -q kexec-tools || yum install -y kexec-tools || log_error "- kexec-tools install failed."
+    rpm -q kexec-tools || install_rpm_package kexec-tools
 
     # enable kdump service: systemd | sys-v
-    /bin/systemctl enable kdump.service || /sbin/chkconfig kdump on || log_error "Error to enable Kdump"
+    /bin/systemctl enable kdump.service || /sbin/chkconfig kdump on || log_error "- Failed to enable kdump!"
+    log_info "- Enabled kdump service"
 }
 
+# Restart kdump service
 kdump_restart()
 {
-    log_info "- restart kdump service."
+    log_info "- Restart kdump service."
     # delete kdump.img in /boot directory
     rm -f /boot/initrd-*kdump.img || rm -f /boot/initramfs-*kdump.img
     touch "${K_CONFIG}"
-    /usr/bin/kdumpctl restart 2>&1 || /sbin/service kdump restart 2>&1 || log_error "Failed to start kdump!"
-    log_info "kdump service start successful."
+    /usr/bin/kdumpctl restart 2>&1 || /sbin/service kdump restart 2>&1 || log_error "- Failed to start kdump!"
+    log_info "- Kdump service starts successfully."
 }
 
 # Config default kdump memory
@@ -126,7 +139,29 @@ def_kdump_mem()
     echo "$args"
 }
 
-# create label
+
+# Append one option to kdump.conf
+append_config()
+{
+    log_info "- Modifying /etc/kdump.conf"
+    if [ $# -eq 0 ]; then
+        log_info "- Nothing to modify."
+        return 0
+    fi
+
+    while [ $# -gt 0 ]; do
+        log_info "- Removing existing ${1%%[[:space:]]*} settings."
+        sed -i "/^${1%%[[:space:]]*}/d" ${K_CONFIG}
+        log_info "- Adding new config '$1'."
+        echo "$1" >> "${K_CONFIG}"
+        shift
+    done
+
+    log_info "- Dump kdump.conf file."
+    log_info $(grep -v ^# "${K_CONFIG}")
+}
+
+# Label a parition
 label_fs()
 {
     local fstype="$1"
@@ -152,39 +187,20 @@ label_fs()
             false
             ;;
     esac
-    
+
     if [ $? -ne 0 ]; then
-        log_err "- failed to label $fstype with $label on $dev"
+        log_err "- Failed to label $fstype with $label on $dev"
     fi
 }
 
-# append option to kdump.conf
-append_config()
-{
-    log_info "- modifying /etc/kdump.conf"
-    if [ $# -eq 0 ]; then
-        log_info "- Nothing to append."
-        return 0
-    fi
-
-    while [ $# -gt 0 ]; do
-        log_info "- removing existed old ${1%%[[:space:]]*} settings."
-        sed -i "/^${1%%[[:space:]]*}/d" ${K_CONFIG}
-        log_info "- adding new arguments '$1'."
-        echo "$1" >> "${K_CONFIG}"
-        shift
-    done
-
-    log_info "- show kdump.conf file."
-    log_info $(grep -v ^# "${K_CONFIG}")
-}
-
-# config kdump.conf
+# Config kdump.conf
+# Not done yet
 configure_kdump_conf()
 {
-    # need accepte pramater from user.
-    # there will include more branch case, like:
-    # config_raw, config_dev_name, config_dev_uuid, config_dev_label, config_nfs, config_ssh, config_ssh_key
+    # To Do:
+    # Allow parameters like:
+    # config_raw, config_dev_name, config_dev_uuid, config_dev_label
+    # config_nfs, config_ssh, config_ssh_key
     # config_path
     # config_core_collector
     # config_post, config_pre
@@ -205,7 +221,7 @@ configure_kdump_conf()
         dev=$(findmnt -kcno SOURCE "$MP")
         fstype=$(findmnt -kcno FSTYPE "$MP")
     fi
-    
+
     case $OPTION in
         uuid)
             # some partitions have both UUID= and PARTUUID=, we only want UUID=
@@ -226,7 +242,7 @@ configure_kdump_conf()
             target=$dev
             ;;
     esac
-    
+
     if [ "yes" == "$RAW" -a -n "$target" ]; then
         append_config "raw $target"
         sed -i "/[ \t]\\$MP[ \t]/d" /etc/fstab
@@ -237,9 +253,8 @@ configure_kdump_conf()
         # tell crash analyse procedure where to find vmcore
         echo "${MP%/}${KPATH}" > ${K_PATH}
     else
-        log_error "- Null dump_device/uuid/label or type wrong."
+        log_error "- Null dump_device/uuid/label or wrong type."
     fi
-
 }
 
 make_module()
@@ -247,7 +262,7 @@ make_module()
     local name
     name=$1
     if [[ -z "${name}" ]];then
-        log_error "Please input your module name"
+        log_error "- No module name is provided."
     fi
     mkdir "${name}"
     cp "${name}".c "${name}/"
@@ -255,164 +270,173 @@ make_module()
 
     unset ARCH
 
-    make -C "${name}/" || log_error "Can not make module"
+    make -C "${name}/" || log_error "- Can not make module."
     export ARCH
     ARCH=$(uname -m)
 }
 
-config_nfs()
-{
-    echo "config nfs target"
-}
 
-config_nfs_ipv6()
-{
-    echo "config ipv6 nfs target"
-}
-#########################################
-# Prepare communication env for client and server
-# It will exit if program error
-# Param:
-#   $1 - Server Hostname
-#   $2 - Client Hostname
-# Global:
-#   None
-# Return:
-#   0 - Config success
-########################################
+# Prepare for client/server communication
+# Install nc client
 prepare_for_multihost()
 {
-    which nc || yum install -y nmap-ncat || yum install -y nc || log_error "Failed to install nc client"
+    which nc || yum install -y nmap-ncat || yum install -y nc || log_error "- Failed to install nc client"
 }
-#########################################
-# Config SSH-Kdump in server and client
-# When error trigger, It will exit
+
+
+# Config ssh on server/client
+# Applicable for both ipv4 and ipv6
+# Including:
+#   set up ssh connection without passwd between s/c
+#   config kdump.conf on client for ssh dump
 # Param:
-#   $1 - Server Hostname
-#   $2 - Client Hostname
-# Global:
-#    
-# Return:
-#   0  -  Success config 
-#
-######################################
+#   $1 - v4 or v6 (v4 if $1 is not given)
 config_ssh()
 {
-    yum install -y openssh-server openssh-clients || log_error "Failed to install openssh-server openssh-client"
+    install_rpm_package openssh-server openssh-clients
     local server
     server=${SERVERS}
     local client
     client=${CLIENTS}
-    if [[ $(get_role) == "client" ]]; then  # copy certification
-        log_info "Run prepare_for_multihost as client"
+
+    # Path where server will save its ipv6 addr to and where client will fetch
+    local path_ipv6_addr="/root/server-ipv6-address"
+
+    ip_version=${1:-"v4"}
+    if [ ${ip_version} != "v4" -a ${ip_version} != "v6" ]; then
+        log_error "- ${ip_version} is not supported. Onlyl ipv4 or ipv6 is supported."
+    fi
+
+    # port used for client/server sync
+    local sync_port
+    sync_port=35412
+
+    if [[ $(get_role) == "client" ]]; then  # copy keys
+        ## Note that if client exit with error during configuration
+        ## It must notify server that config is done at client before exiting
+        ## Otherwise server will keep waiting for the client in order to
+        ## proceed to next step to check vmcore file.
+
+        log_info "- Preparing ssh authentication at client"
+
         mkdir -p "/root/.ssh"
         cp ../lib/id_rsa ${K_LOCK_SSH_ID_RSA}
         chmod 0600 ${K_LOCK_SSH_ID_RSA}
         cp ../lib/id_rsa.pub "${K_LOCK_SSH_ID_RSA}.pub"
         chmod 0600 "${K_LOCK_SSH_ID_RSA}.pub"
 
-        append_config "ssh root@${server}" || log_error "Error to config ssh target"
-        if [[ "$(grep -o '[0-9.]\+' /etc/redhat-release)" =~ ^6 ]]; then
-            append_config "link_delay 60"  # Some network interface, rhel 6 will wait network ready
+        # turn off StrictHostKeyChecking
+        if [[ -f ${K_SSH_CONFIG} ]]; then
+            sed -i "/^StrictHostKeyChecking/d" ${K_SSH_CONFIG}
         fi
+        echo "StrictHostKeyChecking no" >> ${K_SSH_CONFIG}
 
+        log_info "- Waiting for signal from server that sshd service is ready at server."
+        wait_for_signal ${sync_port}
+
+
+        # Test ssh connection
+        log_info "- Test ssh connection between c/s."
+        ssh -o StrictHostKeyChecking=no -i ${K_LOCK_SSH_ID_RSA} "${server}" 'touch ${K_LOCK_AREA}/ssh_test' 
+        # ssh -o StrictHostKeyChecking=no -i ${K_LOCK_SSH_ID_RSA} "${server}" 'touch ${K_LOCK_AREA}/ssh_test' 
+        if [ $? -ne 0 ]; then
+            log_info "- Notifying server that configuration is done at client"
+            send_notify_signal ${server} ${sync_port}  
+            log_error "- SSH connection test failed."
+        fi
+        log_info "- SSH connection test passed."
+
+        # update kdump config file for dumping via ssh
+        if [[ ${ip_version} == "v6" ]]; then
+            # get server ipv6 address
+            ssh -i ${K_LOCK_SSH_ID_RSA} "${server}" "cat ${path_ipv6_addr}" > ${path_ipv6_addr}.out
+            [ $? -eq 0 ] || log_error "- Failed to get server ipv6 address."
+            server_ipv6=$(grep -P '^[0-9]+' ${path_ipv6_addr}.out | head -1)
+            append_config "ssh root@${server_ipv6}"
+        else
+            append_config "ssh root@${server}"
+        fi
         append_config "path ${K_DEFAULT_PATH}"
         append_config "sshkey ${K_LOCK_SSH_ID_RSA}"
         append_config "core_collector makedumpfile -l -F --message-level 1 -d 31"
-        log_info "Config Kdump file successful"
+        if [[ "$(grep -o '[0-9.]\+' /etc/redhat-release)" =~ ^6 ]]; then
+            # Only required for RHEL6.
+            # It needs to wait for while for network readyness
+            append_config "link_delay 60"
+        fi
+        log_info "- Updated Kdump config file for ssh kdump."
+        
+        log_info "- Notifying server that ssh/kdump config is done at client."
+        send_notify_signal ${server} ${sync_port}   
 
-        config_notify_at_client "${server}"
-        ssh -o StrictHostKeyChecking=no -i ${K_LOCK_SSH_ID_RSA} "${server}" 'touch ${K_LOCK_AREA}/ssh_test' || log_error "Test ssh connection error"
-        log_info "SSH connection build successful."
+
     elif [[ $(get_role) == "server" ]]; then
-        log_info "Run prepare_for_multihost as server"
+        log_info "- Preparing ssh authentication at server"
+
         mkdir -p "/root/.ssh"
         touch "/root/.ssh/authorized_keys"
         cat ../lib/id_rsa.pub >> "/root/.ssh/authorized_keys"
         restorecon -R "/root/.ssh/authorized_keys"
 
+        # save server ipv6 address to ${path_ipv6_addr}
+        if [ ${ip_version} == "v6" ]; then
+            ifconfig | grep inet6\ | grep global | awk -F' ' '{print $2}' > ${path_ipv6_addr}
+            if [ $? -eq 0 ]; then
+                log_info "- Sending signal to client that server is done with error."
+                send_notify_signal  ${client}  ${sync_port}
+                log_error "- Failed to get ipv6 address from Server"
+            fi
+        fi
+
         systemctl restart sshd || service sshd restart || log_error "Failed to restart sshd"
-        config_wait_at_server
+
+        # notify client that ssh config and service is ready at server
+        log_info "- Sending signal to client that ssh config/service is ready at server"
+        send_notify_signal ${client} ${sync_port}
+
+        log_info "- Waiting signal from client that client's configuration is done"
+        wait_for_signal ${sync_port}
+        return
     else
-        log_error "Can not determine host role, Please check your hostname."
+        log_error "- Can not determine the role of host."
     fi
 }
-################################
-# Only use at server side after config done
-# Param 
-#   None
-# Return
-#   0 - Wait successful
-#   1 - Timeout
-###############################
-config_wait_at_server()
-{
-    nc -l 35412
-}
-################################
-# Notify server config done after client config done
-# Param 
-#   $1 - Server Hostname
-#   $2 - Sync name
-# Return
-#   0 - Wait successful
-#   1 - Failed
-###############################
-config_notify_at_client()
-{
-    local count
-    count=${K_RETRY_COUNT}
-    local flag
-    flag=1
-    local server=$1
-    while [[ $count -gt 0 ]]; do  # repeate to dump data to server
-        echo "Success" > "/dev/tcp/${server}/35412"
-        if [[ $? -eq 0 ]]; then
-            flag=0
-            break
-        else
-            sleep 10s
-        fi
-        (( count = count - 1 ))
-    done
 
-    if [[ ${flag} -eq 1 ]]; then
-        log_error "Can not notificate server."
+
+# Wait for signal at given port
+# Used for client/server sync
+wait_for_signal()
+{
+    local port=$1
+    nc -l ${port}
+    if [ $? -ne 0 ]; then
+        log_info "- Get error listening for signal at port ${port}"
+        return 1
+    else
+        log_info "- Received signal at port ${port}"
     fi
 }
-#############################################
-# Only use at server side wait client trigger
-# Param
-#   None
-# Global
-#   None
-# Return
-#   None
-##############################################
-trigger_wait_at_server()
-{
-    nc -l 35413
-}
-############################################
-# Notify Trigger Finished to server
+
+# Send notify signal
+# Used for client/server sync
 # Param:
-#  $1 - server hostname
-# Global:
-#  None
-# Return
-#  None
-###########################################
-trigger_notify_at_client()
+# $1 - hostname or ip
+# $2 - port
+send_notify_signal()
 {
     local count
     count=${K_RETRY_COUNT}
-    local flag
-    flag=1
+    local result
+    result=1
+
     local server=$1
-    while [[ $count -gt 0 ]]; do  # repeate to dump data to server
-        echo "Success" > "/dev/tcp/${server}/35413"
-        if [[ $? -eq 0 ]]; then
-            flag=0
+    local port=$2
+
+    # try dump message to /dev/tcp/${server}/${port}
+    while [ $count -gt 0 ]; do
+        echo "Success" > "/dev/tcp/${server}/${port}"
+        if [ $? -eq 0 ]; then
+            result=0
             break
         else
             sleep 10s
@@ -420,22 +444,22 @@ trigger_notify_at_client()
         (( count = count - 1 ))
     done
 
-    if [[ ${flag} -eq 1 ]]; then
-        log_error "Can not notificate server, timeout."
+    if [ ${result} -eq 1 ]; then
+        log_error "- Failed to notify server, got timeout."
+    else
+        log_info "- Sent notify signal to ${server} at ${port} successfully"
     fi
-
 }
 
-############################################
-# Check roles in multiple host task
+
+# Get role of current host (client/server)
+# Used for multi-host task
 # Param:
 # Global:
 #   SERVERS - server ip or hostname
 #   CLIENTS - client ip or hostname
 # Return:
-#   server - Role is server
-#   client - Role is client 
-###########################################
+#   server/client
 get_role()
 {
     if ipcalc -c "${SERVERS}" &> /dev/null; then
@@ -450,7 +474,7 @@ get_role()
     fi
 
     if ipcalc -c "${CLIENTS}" &> /dev/null; then
-        if is_ip_match_host "${CLIENTS}"; then 
+        if is_ip_match_host "${CLIENTS}"; then
             echo "client"
             return
         fi
@@ -461,63 +485,71 @@ get_role()
         fi
     fi
 
-    log_error "Unable to determine roles, Please check your input."
+    log_error "- Unable to determine roles."
 }
-############################################
-# Check IP parameter is current host IP
+
+
+# Check if host ip matches the ip passed in
 # Param:
-#   1 - IP address
-# Global:
+#   1 - an ip
 # Return:
-#   0 - this IP is this host
-#   1 - this IP is not this host
-###########################################
+#   0 - ip matches
+#   1 - ip doesn't match
 is_ip_match_host()
 {
-    local inputIP=$1
+    local input_ip=$1
     for ip in $(ip -o addr | awk '!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); print $4}'); do
-        if [[ $ip == "${inputIP}" ]]; then
+        if [[ $ip == "${input_ip}" ]]; then
             return 0
         fi
     done
     return 1
 }
-config_ssh_key()
+
+
+
+# To Do
+config_nfs()
 {
-    echo "config ssh key"
+    log_info "- configuring nfs target"
 }
 
-config_ssh_ipv6()
+config_nfs_ipv6()
 {
-    echo "config ipv6 ssh target"
+    log_info "- configuring ipv6 nfs target"
+}
+
+config_ssh_key()
+{
+    log_info "- Configuring ssh key"
 }
 
 config_path()
 {
-    echo "config path"
+    log_info "- Configuring path"
 }
 
 config_core_collector()
 {
-    echo "config collector (makedumpfile)"
+    log_info "- Configuring collector (makedumpfile)"
 }
 
 config_post()
 {
-    echo "config post option"
+    log_info "- Configuring post option"
 }
 
 config_pre()
 {
-    echo "config prepare option"
+    log_info "- Configuring pre option"
 }
 
 config_extra()
 {
-    echo "config extra option"
+    log_info "- Configuring extra option"
 }
 
 config_default()
 {
-    echo "config default option"
+    log_info "- Configuring default option"
 }

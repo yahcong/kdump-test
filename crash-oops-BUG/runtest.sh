@@ -31,30 +31,30 @@ crash_oops_BUG()
         kdump_prepare
         kdump_restart
         make_module "oops_BUG"
-        insmod oops_BUG/oops_BUG.ko || log_error "Failed to insmod module"
+        insmod oops_BUG/oops_BUG.ko || log_error "- Failed to insmod module."
 
         touch "${C_REBOOT}"
-        log_info "Boot to 2nd kernel"
         sync
+        log_info "- Triggering crash."
 
         # workaround for bug 810201
         echo 1 > /proc/sys/kernel/panic_on_opps
 
         echo 1 > /proc/crasher
         if [[ $? -ne 0 ]]; then
-            log_error "Error to trigger opps_BUG"
+            log_error "- Failed to trigger oops_BUG."
         fi
 
-        #Stop here
+        # Wait for a while
         sleep 3600
-
-        log_error "Error after sleeping 3600, it still alive"
+        log_error "- Failed to trigger oops_BUG after waiting for 3600s."
     else
         rm -f "${C_REBOOT}"
     fi
+    
     check_vmcore_file
     ready_to_exit
 }
 
-log_info "Start"
+log_info "- Start"
 crash_oops_BUG

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Basic Log Library for Kdump 
+# Basic Log Library for Kdump
 
 # Copyright (C) 2016 Song Qihan <qsong@redhat.com>
 #
@@ -21,7 +21,7 @@
 
 readonly K_LOG_FILE="./result.log"
 
-# check if system is beaker environment.
+# Check if system is beaker environment.
 is_beaker_env()
 {
     ls -l /usr/bin/rhts-environment.sh
@@ -29,7 +29,7 @@ is_beaker_env()
         . /usr/bin/rhts-environment.sh
         return 0
     else
-        log_info "Is not beaker environment."
+        log_info "- This is not executed in beaker."
         return 1
     fi
 }
@@ -39,7 +39,7 @@ is_beaker_env()
 # Globals:
 #   K_LOG_FILE
 # Arguments:
-#   $1 - Log level: Debug, Info, ERROR
+#   $1 - Log level: ERROR, INFO, WARN
 #   $2 - Log message
 # Return:
 #   None
@@ -57,14 +57,10 @@ log()
 }
 
 ############################
-# report file to beaker server 
-# Globals:
-#   None
-# Arguments:
+# Report file to beaker server
+# Param:
 #   $1 - Full File Path
-# Return:
-#   None
-############################ 
+############################
 report_file()
 {
     local filename="$1"
@@ -75,33 +71,32 @@ report_file()
             cat ${filename}
         fi
     else
-        log_info "file ${filename} not exist!"
+        # if file doesn't exist.
+        log_warn "- File ${filename} doesn't exist!"
     fi
 }
 
-###########################
-# Print Debug Info
-# Globals
-#   None
-# Arguments:
-#   $1 - Debug Output Info
-# Return:
-#   None
-##########################
-log_info() 
+
+# Print info message
+# Param:
+#   $1 - Info message
+log_info()
 {
     log "INFO" "$@"
 }
 
-#############################################
-# Print Error Info and report system status
-# Globals
-#   None
-# Arguments:
-#   $1 - Error Output Info
-# Return:
-#   None
-#############################################
+# Print warn message
+# Param:
+#   $1 - Info message
+log_warn()
+{
+    log "WARN" "$@"
+}
+
+
+# Print error message and exit
+# Param:
+#   $1 - Error message
 log_error()
 {
     log "ERROR" "$@"
@@ -109,17 +104,10 @@ log_error()
     exit 1
 }
 
-##############################################
-# Do sth. Before Exit
-# Globals
-#   None
-# Arguments:
-#   $1 - Error Output Info
-# Return:
-#   None
-# Other:
-#   report_result|rhts-abort are included beaker-lib.
-##############################################
+
+# Print test status before exiting
+# Param:
+#   $1 - test status (1- Fail  Other - Pass)
 ready_to_exit()
 {
     report_file "${K_CONFIG}"
@@ -134,23 +122,16 @@ ready_to_exit()
         fi
     else
         if [[ $1 == "1" ]]; then
-            log_info "- [FAIL] Please check test results!"
+            log_info "- [FAIL] Please check test logs!"
             exit 1
         else
-            log_info "- [PASS] All test case to run successfully!"
+            log_info "- [PASS] Tests finished successfully!"
         fi
     fi
 }
 
-#############################################
+
 # Reboot system
-# Globals:
-#   None
-# Arguments:
-#   None
-# Return:
-#   None
-###########################################
 reboot_system()
 {
     /bin/sync

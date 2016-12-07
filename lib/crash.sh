@@ -3,17 +3,16 @@
 ((LIB_CRASH_SH)) && return || LIB_CRASH_SH=1
 . ../lib/log.sh
 
-# This file will test 'crash' command.
-
 check_vmcore_file()
 {
-    log_info "- get vmcore file"
+    log_info "- Find vmcore file"
     find /var/crash/ -newer /etc/kdump.conf -name "vmcore*" -type f | grep vmcore
-    [ $? -ne 0 ] && log_error "- get vmcore failed!"
-    log_info "- get vmcore successful!"
+    [ $? -ne 0 ] && log_error "- Failed to find vmcore!"
+    log_info "- Found vmcore file successfully!"
     log_info $(ls "${K_DEFAULT_PATH}")
 }
 
+# To Do
 analyse_by_crash()
 {
     echo "analyse vmcore by crash commend"

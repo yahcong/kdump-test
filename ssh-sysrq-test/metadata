@@ -1,6 +1,0 @@
-[General]
-
-[restraint]
-entry_point=./runtest.sh
-repoRequires=lib
-use_pty=true
