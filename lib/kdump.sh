@@ -12,6 +12,7 @@ K_BACKUP_DIR="./backup"
 K_CONFIG="/etc/kdump.conf"
 K_DEFAULT_PATH="/var/crash"
 K_SSH_CONFIG="${HOME}/.ssh/config"
+K_HWINFO_FILE="/tmp/hwinfo.log"
 
 readonly K_LOCK_AREA="/root"
 readonly K_LOCK_SSH_ID_RSA=/root/.ssh/id_rsa_kdump_test
@@ -37,6 +38,22 @@ prepare_env()
 {
     mkdir -p "${K_BACKUP_DIR}"
     cp /etc/kdump.conf "${K_BACKUP_DIR}"/
+    echo -e "Architecture:" >> ${K_HWINFO_FILE}
+    arch >> ${K_HWINFO_FILE}
+    echo -e "\n----\nCPU Info:" >> ${K_HWINFO_FILE}
+    lscpu >> ${K_HWINFO_FILE}
+    echo -e "\n----\nMemory Info:" >> ${K_HWINFO_FILE}
+    free -h >> ${K_HWINFO_FILE}
+    echo -e "\n----\nStorage Info:" >> ${K_HWINFO_FILE}
+    lsblk >> ${K_HWINFO_FILE}
+    echo -e "\n----\nNetwork Info:" >> ${K_HWINFO_FILE}
+    ip link >> ${K_HWINFO_FILE}
+    for i in `ip addr | grep -i ': <' | grep -v 'lo:' | awk '{print $2}' | sed "s/://g"` ; do
+        echo "--$i--" >> ${K_HWINFO_FILE}
+        ethtool -i $i >> ${K_HWINFO_FILE}
+    done
+
+    report_file "${K_HWINFO_FILE}"
 }
 
 # Prepare for kdump service
@@ -75,7 +92,7 @@ kdump_prepare()
         }
 
         [ "${KERARGS}" ] && {
-            # touch a file to mark system's been rebooted for kernel cmdline chagne.
+            # touch a file to mark system's been rebooted for kernel cmdline change.
             touch ${K_REBOOT}
             log_info "- Changing boot loader."
             {
