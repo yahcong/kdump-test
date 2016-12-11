@@ -24,8 +24,7 @@ readonly K_LOG_FILE="./result.log"
 # Check if system is beaker environment.
 is_beaker_env()
 {
-    ls -l /usr/bin/rhts-environment.sh
-    if [ $? -eq 0 ]; then
+    if [ -f /usr/bin/rhts-environment.sh ]; then
         . /usr/bin/rhts-environment.sh
         return 0
     else
