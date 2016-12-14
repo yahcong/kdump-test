@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/clean-up
+owner="Qiao Zhao"
+description="kdump-test for clean-up."
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true
