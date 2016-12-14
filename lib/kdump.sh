@@ -12,7 +12,12 @@ K_BACKUP_DIR="./backup"
 K_CONFIG="/etc/kdump.conf"
 K_DEFAULT_PATH="/var/crash"
 K_SSH_CONFIG="${HOME}/.ssh/config"
-K_HWINFO_FILE="/tmp/hwinfo.log"
+K_INFO_DIR="/tmp/kdumptest"
+K_HWINFO_FILE="${K_INFO_DIR}/hwinfo.log"
+K_INITRAMFS_LIST="${K_INFO_DIR}/initramfs.list"
+if [ ! -d ${K_INFO_DIR} ]; then
+    mkdir -p ${K_INFO_DIR}
+fi
 
 readonly K_LOCK_AREA="/root"
 readonly K_LOCK_SSH_ID_RSA=/root/.ssh/id_rsa_kdump_test
@@ -38,6 +43,10 @@ prepare_env()
 {
     mkdir -p "${K_BACKUP_DIR}"
     cp /etc/kdump.conf "${K_BACKUP_DIR}"/
+}
+
+report_hwinfo()
+{
     echo -e "Architecture:" >> ${K_HWINFO_FILE}
     arch >> ${K_HWINFO_FILE}
     echo -e "\n----\nCPU Info:" >> ${K_HWINFO_FILE}
@@ -52,8 +61,27 @@ prepare_env()
         echo "--$i--" >> ${K_HWINFO_FILE}
         ethtool -i $i >> ${K_HWINFO_FILE}
     done
-
     report_file "${K_HWINFO_FILE}"
+}
+
+report_lsinitrd()
+{
+    INITRAMFS_SUFFIX="$(uname -r)kdump.img"
+    INITRAMFS_NAME=$(ls /boot | grep ${INITRAMFS_SUFFIX})
+    lsinitrd /boot/${INITRAMFS_NAME} >> ${K_INITRAMFS_LIST}
+    report_file "${K_INITRAMFS_LIST}"
+}
+
+# Upload Current system information
+# Including:
+#   Upload hardware info
+#   Upload kdump config
+#   Upload file list of initramfs
+report_system_info()
+{
+    report_hwinfo
+    report_lsinitrd
+    report_file "${K_CONFIG}"
 }
 
 # Prepare for kdump service

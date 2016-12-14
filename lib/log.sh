@@ -109,7 +109,6 @@ log_error()
 #   $1 - test status (1- Fail  Other - Pass)
 ready_to_exit()
 {
-    report_file "${K_CONFIG}"
     report_file "${K_LOG_FILE}"
 
     if is_beaker_env; then
