@@ -15,6 +15,7 @@ clean_up()
 
     log_info "- Remove all temporary files."
     rm -f ../lib/"${K_REBOOT}"
+    rm -rf ${K_INFO_DIR}
 
     log_info "- Revert kdump.conf file."
     cp -f ../lib/"${K_BACKUP_DIR}"/kdump.conf /etc/kdump.conf
