@@ -15,6 +15,7 @@ K_SSH_CONFIG="${HOME}/.ssh/config"
 K_INFO_DIR="/tmp/kdumptest"
 K_HWINFO_FILE="${K_INFO_DIR}/hwinfo.log"
 K_INITRAMFS_LIST="${K_INFO_DIR}/initramfs.list"
+
 if [ ! -d ${K_INFO_DIR} ]; then
     mkdir -p ${K_INFO_DIR}
 fi

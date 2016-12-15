@@ -27,7 +27,7 @@ crash-oops-warn()
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare
         kdump_restart
-
+        report_system_info
         log_info "making and installing crash-warn.ko"
         make_module "crash-warn"
 

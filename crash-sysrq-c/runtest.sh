@@ -32,6 +32,7 @@ crash_sysrq_c()
         kdump_prepare
         # add config kdump.conf in here if need
         kdump_restart
+        report_system_info
         touch "${C_REBOOT}"
         sync
         log_info "- Triggering crash."

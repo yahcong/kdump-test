@@ -53,6 +53,7 @@ ssh_sysrq_test()
 
         if [[ $(get_role) == "client" ]]; then
             kdump_restart
+            report_system_info
             log_info "- Triggering crash."
             touch "${C_REBOOT}"
             sync

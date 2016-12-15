@@ -30,6 +30,7 @@ crash_oops_BUG()
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare
         kdump_restart
+        report_system_info
         make_module "oops_BUG"
         insmod oops_BUG/oops_BUG.ko || log_error "- Failed to insmod module."
 
