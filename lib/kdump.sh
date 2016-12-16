@@ -15,6 +15,9 @@ K_SSH_CONFIG="${HOME}/.ssh/config"
 K_INFO_DIR="/tmp/kdumptest"
 K_HWINFO_FILE="${K_INFO_DIR}/hwinfo.log"
 K_INITRAMFS_LIST="${K_INFO_DIR}/initramfs.list"
+K_FIREWALLD_PREFIX="${K_INFO_DIR}/FIREWALLD"
+K_IPTABLES_PREFIX="${K_INFO_DIR}/IPTABLES"
+K_SSHD_ENABLE="${K_INFO_DIR}/SSHD_ENABLE"
 
 if [ ! -d ${K_INFO_DIR} ]; then
     mkdir -p ${K_INFO_DIR}
@@ -83,6 +86,33 @@ report_system_info()
     report_hwinfo
     report_lsinitrd
     report_file "${K_CONFIG}"
+}
+
+config_firewall()
+{
+    local FW_PROTOCOL=$1
+    local FW_PORT=$2
+    if [ $# -ne 2 ]; then
+        log_error "- Syntax error: config_firewall need 2 args"
+        exit 1
+    fi
+    if [ -f /usr/bin/firewall-cmd ]; then
+        firewall-cmd --list-ports | grep "${FW_PORT}/${FW_PROTOCOL}"
+        if [ $? -ne 0 ]; then
+            touch "${K_FIREWALLD_PREFIX}_${FW_PROTOCOL}_${FW_PORT}"
+            firewall-cmd --add-port=${FW_PORT}/${FW_PROTOCOL}
+            firewall-cmd --add-port=${FW_PORT}/${FW_PROTOCOL} --permanent
+        fi
+    else
+        iptables-save | grep ${FW_PROTOCOL} | grep ${FW_PORT}
+        if [ $? -ne 0 ]; then
+            touch "${K_IPTABLES_PREFIX}_${FW_PROTOCOL}_${FW_PORT}"
+            iptables -I INPUT -p ${FW_PROTOCOL} --dport ${FW_PORT} -j ACCEPT
+            service iptables save
+            ip6tables -I INPUT -p ${FW_PROTOCOL} --dport ${FW_PORT} -j ACCEPT
+            service ip6tables save
+        fi
+    fi
 }
 
 # Prepare for kdump service
@@ -419,6 +449,13 @@ config_ssh()
     elif [[ $(get_role) == "server" ]]; then
         log_info "- Preparing ssh authentication at server"
 
+        systemctl status sshd || service sshd status
+        if [ $? -ne 0 ]; then
+            systemctl start sshd || service sshd start
+            touch ${K_SSHD_ENABLE}
+            systemctl enable sshd || chkconfig sshd on
+            config_firewall tcp 22
+        fi
         mkdir -p "/root/.ssh"
         touch "/root/.ssh/authorized_keys"
         cat ../lib/id_rsa.pub >> "/root/.ssh/authorized_keys"
@@ -454,9 +491,10 @@ config_ssh()
 wait_for_signal()
 {
     local port=$1
+    config_firewall tcp ${port}
     nc -l ${port}
     if [ $? -ne 0 ]; then
-        log_info "- Get error listening for signal at port ${port}"
+        log_error "- Got error listening for signal at port ${port}"
         return 1
     else
         log_info "- Received signal at port ${port}"
