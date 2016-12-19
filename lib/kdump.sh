@@ -4,6 +4,9 @@
 . ../lib/log.sh
 
 K_ARCH="$(uname -m)"
+K_DIST_NAME=`rpm -E %{?dist} | sed 's/[.0-9]//g'`
+K_DIST_VER=`rpm -E %{?dist} | sed 's/[^0-9]//g'`
+
 K_REBOOT="./K_REBOOT"
 K_PATH="./KDUMP-PATH"
 K_RAW="./KDUMP-RAW"
@@ -88,13 +91,42 @@ report_system_info()
     report_file "${K_CONFIG}"
 }
 
-config_firewall()
+# Config firewall by service name in FirewallD
+# This only works with FirewallD.
+# RHEL 6 and older, Fedora 18 and older are not supported
+config_firewall_service()
+{
+    if [ $# -ne 1 ]; then
+        log_error "- Syntax error: service is needed for config_firewall_service"
+        ready_to_exit 1
+    fi
+    local FW_SERVICE=$1
+    if [ -f /usr/bin/firewall-cmd ]; then
+        firewall-cmd --list-service | grep "${FW_SERVICE}"
+        if [ $? -ne 0 ]; then
+            touch "${K_FIREWALLD_PREFIX}_service_${FW_SERVICE}"
+            firewall-cmd --add-service=${FW_SERVICE}
+            firewall-cmd --add-service=${FW_SERVICE} --permanent
+            return $?
+        fi
+    else
+        log_warning "- The function config_firewall_service only supported with FirewallD"
+        return 1
+    fi
+}
+
+# Config firewall by protocol and port.
+# Only tcp/udp protocols are supported.
+config_firewall_port()
 {
     local FW_PROTOCOL=$1
     local FW_PORT=$2
+    if [[ ! "tcp udp" =~ ${FW_PROTOCOL} ]]; then
+        log_error "- Syntax error: config_firewall_port can only work with tcp/udp."
+        ready_to_exit 1
     if [ $# -ne 2 ]; then
-        log_error "- Syntax error: config_firewall need 2 args"
-        exit 1
+        log_error "- Syntax error: config_firewall_port needs 2 args."
+        ready_to_exit 1
     fi
     if [ -f /usr/bin/firewall-cmd ]; then
         firewall-cmd --list-ports | grep "${FW_PORT}/${FW_PROTOCOL}"
@@ -454,7 +486,7 @@ config_ssh()
             systemctl start sshd || service sshd start
             touch ${K_SSHD_ENABLE}
             systemctl enable sshd || chkconfig sshd on
-            config_firewall tcp 22
+            config_firewall_port tcp 22
         fi
         mkdir -p "/root/.ssh"
         touch "/root/.ssh/authorized_keys"
@@ -491,7 +523,7 @@ config_ssh()
 wait_for_signal()
 {
     local port=$1
-    config_firewall tcp ${port}
+    config_firewall_port tcp ${port}
     nc -l ${port}
     if [ $? -ne 0 ]; then
         log_error "- Got error listening for signal at port ${port}"
@@ -596,6 +628,19 @@ is_ip_match_host()
 config_nfs()
 {
     log_info "- configuring nfs target"
+    if [[ ${K_DIST_NAME} =="el" ]] && [ ${K_DIST_VER} -lt 7 ]; then
+        log_error "- Error: nfs dump test is not supported in RHEL/CentOS version 6 or earlier. Exiting"
+        ready_to_exit 1
+    fi
+    rpm -q nfs-utils
+    if [ $? -ne 0 ]; then
+        log_error "- Error: nfs not installed. Exiting"
+        ready_to_exit 1
+    fi
+    config_firewall_service mountd
+    config_firewall_service rpc-bind
+    config_firewall_service nfs
+
 }
 
 config_nfs_ipv6()

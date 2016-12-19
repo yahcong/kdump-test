@@ -53,6 +53,10 @@ clean_up()
         firewall-cmd --remove-port=$(echo $iport| awk -F '_' '{print $3}')/udp --permanent
         firewall-cmd --remove-port=$(echo $iport| awk -F '_' '{print $3}')/udp
     done
+    for iservice in $(ls ${K_FIREWALLD_PREFIX}_service_*); do
+        firewall-cmd --remove-service=$(echo $iservice| awk -F '_' '{print $3}') --permanent
+        firewall-cmd --remove-service=$(echo $iservice| awk -F '_' '{print $3}')
+    done
 
     # Restore sshd status
     log_info "- Restore sshd status."
