@@ -124,6 +124,7 @@ config_firewall_port()
     if [[ ! "tcp udp" =~ ${FW_PROTOCOL} ]]; then
         log_error "- Syntax error: config_firewall_port can only work with tcp/udp."
         ready_to_exit 1
+    fi
     if [ $# -ne 2 ]; then
         log_error "- Syntax error: config_firewall_port needs 2 args."
         ready_to_exit 1
@@ -445,11 +446,11 @@ config_ssh()
 
         # Test ssh connection
         log_info "- Test ssh connection between c/s."
-        ssh -o StrictHostKeyChecking=no -i ${K_LOCK_SSH_ID_RSA} "${server}" 'touch ${K_LOCK_AREA}/ssh_test' 
-        # ssh -o StrictHostKeyChecking=no -i ${K_LOCK_SSH_ID_RSA} "${server}" 'touch ${K_LOCK_AREA}/ssh_test' 
+        ssh -o StrictHostKeyChecking=no -i ${K_LOCK_SSH_ID_RSA} "${server}" 'touch ${K_LOCK_AREA}/ssh_test'
+        # ssh -o StrictHostKeyChecking=no -i ${K_LOCK_SSH_ID_RSA} "${server}" 'touch ${K_LOCK_AREA}/ssh_test'
         if [ $? -ne 0 ]; then
             log_info "- Notifying server that configuration is done at client"
-            send_notify_signal ${server} ${sync_port}  
+            send_notify_signal ${server} ${sync_port}
             log_error "- SSH connection test failed."
         fi
         log_info "- SSH connection test passed."
@@ -473,9 +474,9 @@ config_ssh()
             append_config "link_delay 60"
         fi
         log_info "- Updated Kdump config file for ssh kdump."
-        
+
         log_info "- Notifying server that ssh/kdump config is done at client."
-        send_notify_signal ${server} ${sync_port}   
+        send_notify_signal ${server} ${sync_port}
 
 
     elif [[ $(get_role) == "server" ]]; then
@@ -628,7 +629,7 @@ is_ip_match_host()
 config_nfs()
 {
     log_info "- configuring nfs target"
-    if [[ ${K_DIST_NAME} =="el" ]] && [ ${K_DIST_VER} -lt 7 ]; then
+    if [[ ${K_DIST_NAME} == "el" ]] && [ ${K_DIST_VER} -lt 7 ]; then
         log_error "- Error: nfs dump test is not supported in RHEL/CentOS version 6 or earlier. Exiting"
         ready_to_exit 1
     fi
