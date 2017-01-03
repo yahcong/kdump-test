@@ -4,37 +4,50 @@
 . ../lib/log.sh
 
 K_ARCH="$(uname -m)"
-K_DIST_NAME=`rpm -E %{?dist} | sed 's/[.0-9]//g'`
-K_DIST_VER=`rpm -E %{?dist} | sed 's/[^0-9]//g'`
+K_DIST_NAME="$(rpm -E %{?dist} | sed 's/[.0-9]//g')"
+K_DIST_VER="$(rpm -E %{?dist} | sed 's/[^0-9]//g')"
 
-K_REBOOT="./K_REBOOT"
-K_PATH="./KDUMP-PATH"
-K_RAW="./KDUMP-RAW"
-K_BACKUP_DIR="./backup"
+K_TMP_DIR="${TESTAREA}/temp/"
+K_REBOOT="${K_TMP_DIR}/K_REBOOT"
+# KDUMP-PATH is the file store the full path to vmcore files.
+# KDUMP-PATH = ${MP%/}${KPATH}
+K_PATH="${K_TMP_DIR}/KDUMP-PATH"
+K_RAW="${K_TMP_DIR}/KDUMP-RAW"
+K_BACKUP_DIR="${K_TMP_DIR}/backup"
 
 K_CONFIG="/etc/kdump.conf"
 K_DEFAULT_PATH="/var/crash"
 K_SSH_CONFIG="${HOME}/.ssh/config"
-K_INFO_DIR="/tmp/kdumptest"
+
+K_INFO_DIR="${TESTAREA}/testinfo"
 K_HWINFO_FILE="${K_INFO_DIR}/hwinfo.log"
 K_INITRAMFS_LIST="${K_INFO_DIR}/initramfs.list"
 K_FIREWALLD_PREFIX="${K_INFO_DIR}/FIREWALLD"
 K_IPTABLES_PREFIX="${K_INFO_DIR}/IPTABLES"
 K_SSHD_ENABLE="${K_INFO_DIR}/SSHD_ENABLE"
 
-if [ ! -d ${K_INFO_DIR} ]; then
-    mkdir -p ${K_INFO_DIR}
-fi
-
 readonly K_LOCK_AREA="/root"
-readonly K_LOCK_SSH_ID_RSA=/root/.ssh/id_rsa_kdump_test
+readonly K_LOCK_SSH_ID_RSA="${K_LOCK_AREA}/.ssh/id_rsa_kdump_test"
 readonly K_RETRY_COUNT=1000
 
+# Test parameters could be passed in
 KPATH=${KPATH:-${K_DEFAULT_PATH}}
 OPTION=${OPTION:-}
 MP=${MP:-/}
 LABEL=${LABEL:-label-kdump}
 RAW=${RAW:-no}
+TESTAREA=${TESTAREA:-"${HOME}/testarea"}
+
+
+if [ ! -d "${K_TMP_DIR}" ]; then
+    log_info "Creating test tmp dir: ${K_TMP_DIR}"
+    mkdir -p "${K_TMP_DIR}"
+fi
+
+if [ ! -d "${K_INFO_DIR}" ]; then
+    log_info "Creating test info dir: ${K_INFO_DIR}"
+    mkdir -p "${K_INFO_DIR}"
+fi
 
 
 install_rpm_package()
@@ -54,19 +67,19 @@ prepare_env()
 
 report_hwinfo()
 {
-    echo -e "Architecture:" >> ${K_HWINFO_FILE}
-    arch >> ${K_HWINFO_FILE}
-    echo -e "\n----\nCPU Info:" >> ${K_HWINFO_FILE}
-    lscpu >> ${K_HWINFO_FILE}
-    echo -e "\n----\nMemory Info:" >> ${K_HWINFO_FILE}
-    free -h >> ${K_HWINFO_FILE}
-    echo -e "\n----\nStorage Info:" >> ${K_HWINFO_FILE}
-    lsblk >> ${K_HWINFO_FILE}
-    echo -e "\n----\nNetwork Info:" >> ${K_HWINFO_FILE}
-    ip link >> ${K_HWINFO_FILE}
-    for i in `ip addr | grep -i ': <' | grep -v 'lo:' | awk '{print $2}' | sed "s/://g"` ; do
-        echo "--$i--" >> ${K_HWINFO_FILE}
-        ethtool -i $i >> ${K_HWINFO_FILE}
+    echo -e "Architecture:" >> "${K_HWINFO_FILE}"
+    arch >> "${K_HWINFO_FILE}"
+    echo -e "\n----\nCPU Info:" >> "${K_HWINFO_FILE}"
+    lscpu >> "${K_HWINFO_FILE}"
+    echo -e "\n----\nMemory Info:" >> "${K_HWINFO_FILE}"
+    free -h >> "${K_HWINFO_FILE}"
+    echo -e "\n----\nStorage Info:" >> "${K_HWINFO_FILE}"
+    lsblk >> "${K_HWINFO_FILE}"
+    echo -e "\n----\nNetwork Info:" >> "${K_HWINFO_FILE}"
+    ip link >> "${K_HWINFO_FILE}"
+    for i in $(ip addr | grep -i ': <' | grep -v 'lo:' | awk '{print $2}' | sed "s/://g") ; do
+        echo "--$i--" >> "${K_HWINFO_FILE}"
+        ethtool -i $i >> "${K_HWINFO_FILE}"
     done
     report_file "${K_HWINFO_FILE}"
 }
@@ -74,8 +87,8 @@ report_hwinfo()
 report_lsinitrd()
 {
     INITRAMFS_SUFFIX="$(uname -r)kdump.img"
-    INITRAMFS_NAME=$(ls /boot | grep ${INITRAMFS_SUFFIX})
-    lsinitrd /boot/${INITRAMFS_NAME} >> ${K_INITRAMFS_LIST}
+    INITRAMFS_NAME=$(ls /boot | grep "${INITRAMFS_SUFFIX}")
+    lsinitrd "/boot/${INITRAMFS_NAME}" >> "${K_INITRAMFS_LIST}"
     report_file "${K_INITRAMFS_LIST}"
 }
 
@@ -100,7 +113,9 @@ config_firewall_service()
         log_error "- Syntax error: service is needed for config_firewall_service"
         ready_to_exit 1
     fi
+
     local FW_SERVICE=$1
+
     if [ -f /usr/bin/firewall-cmd ]; then
         firewall-cmd --list-service | grep "${FW_SERVICE}"
         if [ $? -ne 0 ]; then
@@ -121,14 +136,17 @@ config_firewall_port()
 {
     local FW_PROTOCOL=$1
     local FW_PORT=$2
+
     if [[ ! "tcp udp" =~ ${FW_PROTOCOL} ]]; then
         log_error "- Syntax error: config_firewall_port can only work with tcp/udp."
         ready_to_exit 1
     fi
+
     if [ $# -ne 2 ]; then
         log_error "- Syntax error: config_firewall_port needs 2 args."
         ready_to_exit 1
     fi
+
     if [ -f /usr/bin/firewall-cmd ]; then
         firewall-cmd --list-ports | grep "${FW_PORT}/${FW_PROTOCOL}"
         if [ $? -ne 0 ]; then
@@ -185,7 +203,7 @@ kdump_prepare()
 
         [ "${KERARGS}" ] && {
             # touch a file to mark system's been rebooted for kernel cmdline change.
-            touch ${K_REBOOT}
+            touch "${K_REBOOT}"
             log_info "- Changing boot loader."
             {
                 /sbin/grubby    \
@@ -276,21 +294,21 @@ label_fs()
     local fstype="$1"
     local dev="$2"
     local mp="$3"
-    local label=$4
+    local label="$4"
 
-    case $fstype in
+    case "$fstype" in
         xfs)
-            umount $dev &&
-            xfs_admin -L $label $dev &&
-            mount $dev $mp
+            umount "$dev" &&
+            xfs_admin -L "$label" "$dev" &&
+            mount "$dev" "$mp"
             ;;
         ext[234])
-            e2label $dev $label
+            e2label "$dev" "$label"
             ;;
         btrfs)
-            umount $dev &&
-            btrfs filesystem label $dev $label &&
-            mount $dev $mp
+            umount "$dev" &&
+            btrfs filesystem label "$dev" "$label" &&
+            mount "$dev" "$mp"
             ;;
         *)
             false
@@ -322,9 +340,9 @@ configure_kdump_conf()
 
     # get dev, fstype
     if [ "yes" == "$RAW" -a -f "${K_RAW}" ]; then
-        dev=$(cut -d" " -f1 ${K_RAW})
-        fstype=(cut -d" " -f2 ${K_RAW})
-        rm -f ${K_RAW}
+        dev=$(cut -d" " -f1 "${K_RAW}")
+        fstype=(cut -d" " -f2 "${K_RAW}")
+        rm -f "${K_RAW}"
         mkfs."${fstype[0]}" "$dev" && mount "$dev" "$MP"
     else
         dev=$(findmnt -kcno SOURCE "$MP")
@@ -355,12 +373,12 @@ configure_kdump_conf()
     if [ "yes" == "$RAW" -a -n "$target" ]; then
         append_config "raw $target"
         sed -i "/[ \t]\\$MP[ \t]/d" /etc/fstab
-        echo "$dev $fstype" > ${K_RAW}
+        echo "$dev $fstype" > "${K_RAW}"
     elif [ -n "$fstype" -a -n "$target" ]; then
         append_config "$fstype $target" "path $KPATH"
         mkdir -p "$MP/$KPATH"
         # tell crash analyse procedure where to find vmcore
-        echo "${MP%/}${KPATH}" > ${K_PATH}
+        echo "${MP%/}${KPATH}" > "${K_PATH}"
     else
         log_error "- Null dump_device/uuid/label or wrong type."
     fi
@@ -412,7 +430,7 @@ config_ssh()
     local path_ipv6_addr="/root/server-ipv6-address"
 
     ip_version=${1:-"v4"}
-    if [ ${ip_version} != "v4" -a ${ip_version} != "v6" ]; then
+    if [ "${ip_version}" != "v4" -a "${ip_version}" != "v6" ]; then
         log_error "- ${ip_version} is not supported. Onlyl ipv4 or ipv6 is supported."
     fi
 
@@ -436,9 +454,9 @@ config_ssh()
 
         # turn off StrictHostKeyChecking
         if [[ -f ${K_SSH_CONFIG} ]]; then
-            sed -i "/^StrictHostKeyChecking/d" ${K_SSH_CONFIG}
+            sed -i "/^StrictHostKeyChecking/d" "${K_SSH_CONFIG}"
         fi
-        echo "StrictHostKeyChecking no" >> ${K_SSH_CONFIG}
+        echo "StrictHostKeyChecking no" >> "${K_SSH_CONFIG}"
 
         log_info "- Waiting for signal from server that sshd service is ready at server."
         wait_for_signal ${sync_port}
@@ -450,7 +468,7 @@ config_ssh()
         # ssh -o StrictHostKeyChecking=no -i ${K_LOCK_SSH_ID_RSA} "${server}" 'touch ${K_LOCK_AREA}/ssh_test'
         if [ $? -ne 0 ]; then
             log_info "- Notifying server that configuration is done at client"
-            send_notify_signal ${server} ${sync_port}
+            send_notify_signal "${server}" "${sync_port}"
             log_error "- SSH connection test failed."
         fi
         log_info "- SSH connection test passed."
@@ -476,7 +494,7 @@ config_ssh()
         log_info "- Updated Kdump config file for ssh kdump."
 
         log_info "- Notifying server that ssh/kdump config is done at client."
-        send_notify_signal ${server} ${sync_port}
+        send_notify_signal "${server}" "${sync_port}"
 
 
     elif [[ $(get_role) == "server" ]]; then
@@ -485,7 +503,7 @@ config_ssh()
         systemctl status sshd || service sshd status
         if [ $? -ne 0 ]; then
             systemctl start sshd || service sshd start
-            touch ${K_SSHD_ENABLE}
+            touch "${K_SSHD_ENABLE}"
             systemctl enable sshd || chkconfig sshd on
             config_firewall_port tcp 22
         fi
@@ -495,11 +513,11 @@ config_ssh()
         restorecon -R "/root/.ssh/authorized_keys"
 
         # save server ipv6 address to ${path_ipv6_addr}
-        if [ ${ip_version} == "v6" ]; then
+        if [ "${ip_version}" == "v6" ]; then
             ifconfig | grep inet6\ | grep global | awk -F' ' '{print $2}' > ${path_ipv6_addr}
             if [ $? -eq 0 ]; then
                 log_info "- Sending signal to client that server is done with error."
-                send_notify_signal  ${client}  ${sync_port}
+                send_notify_signal  "${client}"  "${sync_port}"
                 log_error "- Failed to get ipv6 address from Server"
             fi
         fi
@@ -508,7 +526,7 @@ config_ssh()
 
         # notify client that ssh config and service is ready at server
         log_info "- Sending signal to client that ssh config/service is ready at server"
-        send_notify_signal ${client} ${sync_port}
+        send_notify_signal "${client}" "${sync_port}"
 
         log_info "- Waiting signal from client that client's configuration is done"
         wait_for_signal ${sync_port}
@@ -625,7 +643,9 @@ is_ip_match_host()
 
 
 
-# To Do
+# Not Done Yet
+# To Do:
+#   Configure nfs service on server and client
 config_nfs()
 {
     log_info "- configuring nfs target"
