@@ -12,12 +12,122 @@ check_vmcore_file()
     log_info $(ls "${K_DEFAULT_PATH}")
 }
 
-# To Do
 analyse_by_crash()
 {
-    echo "analyse vmcore by crash commend"
+    # Also check command output of this session.
+    # See BZ1203238: kmem -S -I kmalloc-8,kmalloc-16
+    cat <<EOF >>"${TESTAREA}/crash.cmd"
+help -v
+help -m
+help -n
+swap
+mod
+mod -S
+runq
+foreach bt
+foreach files
+mount
+mount -f
+vm
+net
+mach -m
+search -u deadbeef
+set
+set -p
+set -v
+bt
+bt -t
+bt -r
+bt -T
+bt -l
+bt -a
+bt -f
+bt -e
+bt -E
+bt -F
+bt 0
+ps
+ps -k
+ps -u
+ps -s
+dev
+kmem -i
+kmem -s
+kmem -S -I kmalloc-8,kmalloc-16
+task
+p jiffies
+sym jiffies
+rd -d jiffies
+set -c 0
+EOF
+
+    # Bug 1204584, In order for the "irq -u" option to work, the architecture
+    # must have either the "no_irq_chip" or the "nr_irq_type" symbols to exist.
+    # The s390x has none of them:
+    if [ "$(uname -m)" != "s390x" ]; then
+        cat <<EOF >>"${TESTAREA}/crash.cmd"
+irq
+irq -b
+irq -u
+exit
+EOF
+    fi
+
+    vmlinux="/usr/lib/debug/lib/modules/$(uname -r)/vmlinux"
+    [ ! -f "${vmlinux}" ] && log_error "- Vmlinux not found."
+
+    # save vmcore path to $vmcore.
+    local vmcore=""
+
+    vmcore=$(get_vmcore_path)
+
+    crash_command "" "${vmlinux}" "${vmcore}"
 }
 
+crash_command()
+{
+    local args=$1; shift
+    local aux=$1; shift
+    local core=$1; shift
+    touch ${TESTAREA}/crash.log
+
+    log_info "- Check command output of this session"
+    log_info "- # crash ${args} -i ${TESTAREA}/crash.cmd ${aux} ${core}"
+    crash ${args} -i "${TESTAREA}/crash.cmd" ${aux} ${core} > "${TESTAREA}/crash.log" 2>&1 <<EOF
+EOF
+
+    code=$?
+    if [ ${code} -ne 0 ]; then
+        log_error "- Crash returns error code ${code}"
+    fi
+
+    report_file ${TESTAREA}/crash.cmd
+    report_file ${TESTAREA}/crash.log
+}
+
+get_vmcore_path()
+{
+    local path=""
+    local vmcorepath=""
+
+    [ -f "${K_PATH}" ] && path=$(cat "${K_PATH}") || path="${K_DEFAULT_PATH}"
+
+    if [ -f "${K_NFS}" ]; then
+        vmcorepath="$(cat "${K_NFS}")${path}" # need update
+    else
+        vmcorepath="${path}"
+    fi
+
+    count=$(find "${vmcorepath}" -name "vmcore" -type f | wc -l)
+    if [ $count -gt 0 ]; then
+        vmcore=$(find "${vmcorepath}" -name "vmcore" -type -f 2>/dev/null | head 1)
+        echo $vmcore
+    else
+        log_error "- No vmcore found in ${vmcorepath}"
+    fi
+}
+
+# To Do
 analyse_live()
 {
     echo "analyse in live system"
