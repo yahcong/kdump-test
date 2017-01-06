@@ -117,6 +117,11 @@ config_firewall_service()
     local FW_SERVICE=$1
 
     if [ -f /usr/bin/firewall-cmd ]; then
+        systemctl status firewalld
+        if [ $? -ne 0 ]; then
+            log_info "- FirewallD is not running, so not changing firewall rules."
+            return 0
+        fi
         firewall-cmd --list-service | grep "${FW_SERVICE}"
         if [ $? -ne 0 ]; then
             touch "${K_FIREWALLD_PREFIX}_service_${FW_SERVICE}"
@@ -148,6 +153,11 @@ config_firewall_port()
     fi
 
     if [ -f /usr/bin/firewall-cmd ]; then
+        systemctl status firewalld
+        if [ $? -ne 0 ]; then
+            log_info "- FirewallD is not running, so not changing firewall rules."
+            return 0
+        fi
         firewall-cmd --list-ports | grep "${FW_PORT}/${FW_PROTOCOL}"
         if [ $? -ne 0 ]; then
             touch "${K_FIREWALLD_PREFIX}_${FW_PROTOCOL}_${FW_PORT}"
@@ -155,6 +165,11 @@ config_firewall_port()
             firewall-cmd --add-port=${FW_PORT}/${FW_PROTOCOL} --permanent
         fi
     else
+        service iptables status
+        if [ $? -ne 0 ]; then
+            log_info "- The iptables service is not running, so not changing iptables rules."
+            return 0
+        fi
         iptables-save | grep ${FW_PROTOCOL} | grep ${FW_PORT}
         if [ $? -ne 0 ]; then
             touch "${K_IPTABLES_PREFIX}_${FW_PROTOCOL}_${FW_PORT}"
