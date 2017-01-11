@@ -73,7 +73,7 @@ static void altsysrq_input_altsysrq_event(struct input_dev *dev, int key)
         input_event(dev, EV_KEY, KEY_LEFTALT, 0);
 }
 
-static int altsysrq_write_proc(struct file *filep, const char *buf, unsigned long len, void *data)
+static ssize_t altsysrq_write_proc(struct file *filep, const char __user *buf, size_t len, loff_t *data)
 {
         char c;
         printk("altsysrq_write_proc...\n");
