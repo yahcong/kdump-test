@@ -111,7 +111,6 @@ config_firewall_service()
 {
     if [ $# -ne 1 ]; then
         log_error "- Syntax error: service is needed for config_firewall_service"
-        ready_to_exit 1
     fi
 
     local FW_SERVICE=$1
@@ -144,12 +143,10 @@ config_firewall_port()
 
     if [[ ! "tcp udp" =~ ${FW_PROTOCOL} ]]; then
         log_error "- Syntax error: config_firewall_port can only work with tcp/udp."
-        ready_to_exit 1
     fi
 
     if [ $# -ne 2 ]; then
         log_error "- Syntax error: config_firewall_port needs 2 args."
-        ready_to_exit 1
     fi
 
     if [ -f /usr/bin/firewall-cmd ]; then
@@ -348,7 +345,7 @@ configure_kdump_conf()
     # config_post, config_pre
     # config_extra
     # config_default
-    log_info "- config kdump configuration"
+    log_info "- Edit kdump configuration"
     local dev=""
     local fstype=""
     local target=""
@@ -537,7 +534,7 @@ config_ssh()
             fi
         fi
 
-        systemctl restart sshd || service sshd restart || log_error "Failed to restart sshd"
+        systemctl restart sshd || service sshd restart || log_error "- Failed to restart sshd"
 
         # notify client that ssh config and service is ready at server
         log_info "- Sending signal to client that ssh config/service is ready at server"
@@ -666,12 +663,10 @@ config_nfs()
     log_info "- configuring nfs target"
     if [[ ${K_DIST_NAME} == "el" ]] && [ ${K_DIST_VER} -lt 7 ]; then
         log_error "- Error: nfs dump test is not supported in RHEL/CentOS version 6 or earlier. Exiting"
-        ready_to_exit 1
     fi
     rpm -q nfs-utils
     if [ $? -ne 0 ]; then
         log_error "- Error: nfs not installed. Exiting"
-        ready_to_exit 1
     fi
     config_firewall_service mountd
     config_firewall_service rpc-bind
