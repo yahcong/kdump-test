@@ -657,21 +657,26 @@ is_ip_match_host()
 
 # Not Done Yet
 # To Do:
-#   Configure nfs service on server and client
+#   Configure nfs service on server
 config_nfs()
 {
     log_info "- configuring nfs target"
-    if [[ ${K_DIST_NAME} == "el" ]] && [ ${K_DIST_VER} -lt 7 ]; then
-        log_error "- Error: nfs dump test is not supported in RHEL/CentOS version 6 or earlier. Exiting"
-    fi
     rpm -q nfs-utils
     if [ $? -ne 0 ]; then
         log_error "- Error: nfs not installed. Exiting"
     fi
-    config_firewall_service mountd
-    config_firewall_service rpc-bind
-    config_firewall_service nfs
-
+    if [[ ${K_DIST_NAME} == "el" ]] && [ ${K_DIST_VER} -lt 7 ]; then
+        log_warn "- Warning: You need to manually configure iptables rules for NFS on RHEL 6."
+        config_firewall_port tcp 2049
+        config_firewall_port udp 2049
+        config_firewall_port tcp 111
+        config_firewall_port udp 111
+    else
+        config_firewall_service mountd
+        config_firewall_service rpc-bind
+        config_firewall_service nfs
+    fi
+    # TODO: Add kdump configuration for NFS server.
 }
 
 config_nfs_ipv6()
