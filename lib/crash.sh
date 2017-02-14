@@ -2,6 +2,7 @@
 
 ((LIB_CRASH_SH)) && return || LIB_CRASH_SH=1
 . ../lib/log.sh
+. ../lib/kdump.sh
 
 check_vmcore_file()
 {
@@ -120,11 +121,20 @@ get_vmcore_path()
 
     count=$(find "${vmcorepath}" -name "vmcore" -type f | wc -l)
     if [ $count -gt 0 ]; then
-        vmcore=$(find "${vmcorepath}" -name "vmcore" -type -f 2>/dev/null | head 1)
+        vmcore=$(find "${vmcorepath}" -name "vmcore" -type f 2>/dev/null | head -1)
         echo $vmcore
     else
         log_error "- No vmcore found in ${vmcorepath}"
     fi
+}
+
+check_depend_package()
+{
+    for args in $@; do
+        rpm -q $args || yum install -y $args || log_error "- Install package $args failed!"
+    done
+
+    log_info "- Check depend pakcage finished."
 }
 
 # To Do
