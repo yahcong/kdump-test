@@ -7,17 +7,26 @@ K_ARCH="$(uname -m)"
 K_DIST_NAME="$(rpm -E %{?dist} | sed 's/[.0-9]//g')"
 K_DIST_VER="$(rpm -E %{?dist} | sed 's/[^0-9]//g')"
 
-K_TMP_DIR="${TESTAREA}/temp/"
-K_REBOOT="${K_TMP_DIR}/K_REBOOT"
-# KDUMP-PATH is the file store the full path to vmcore files.
-# KDUMP-PATH = ${MP%/}${KPATH}
-K_PATH="${K_TMP_DIR}/KDUMP-PATH"
-K_RAW="${K_TMP_DIR}/KDUMP-RAW"
-K_BACKUP_DIR="${K_TMP_DIR}/backup"
-
 K_CONFIG="/etc/kdump.conf"
 K_DEFAULT_PATH="/var/crash"
 K_SSH_CONFIG="${HOME}/.ssh/config"
+
+# Test parameters could be passed in
+KPATH=${KPATH:-${K_DEFAULT_PATH}}
+OPTION=${OPTION:-}
+MP=${MP:-/}
+LABEL=${LABEL:-label-kdump}
+RAW=${RAW:-no}
+TESTAREA=${TESTAREA:-"/mnt/testarea"}
+
+K_TMP_DIR="${TESTAREA}/temp/"
+K_REBOOT="${K_TMP_DIR}/K_REBOOT"
+
+# KDUMP-PATH is the file store the full path to vmcore files.
+# e.g. KDUMP-PATH = ${MP%/}${KPATH}
+K_PATH="${K_TMP_DIR}/KDUMP-PATH"
+K_RAW="${K_TMP_DIR}/KDUMP-RAW"
+K_BACKUP_DIR="${K_TMP_DIR}/backup"
 
 K_INFO_DIR="${TESTAREA}/testinfo"
 K_HWINFO_FILE="${K_INFO_DIR}/hwinfo.log"
@@ -29,15 +38,6 @@ K_SSHD_ENABLE="${K_INFO_DIR}/SSHD_ENABLE"
 readonly K_LOCK_AREA="/root"
 readonly K_LOCK_SSH_ID_RSA="${K_LOCK_AREA}/.ssh/id_rsa_kdump_test"
 readonly K_RETRY_COUNT=1000
-
-# Test parameters could be passed in
-KPATH=${KPATH:-${K_DEFAULT_PATH}}
-OPTION=${OPTION:-}
-MP=${MP:-/}
-LABEL=${LABEL:-label-kdump}
-RAW=${RAW:-no}
-TESTAREA=${TESTAREA:-"${HOME}/testarea"}
-
 
 if [ ! -d "${K_TMP_DIR}" ]; then
     log_info "Creating test tmp dir: ${K_TMP_DIR}"
@@ -237,6 +237,9 @@ kdump_prepare()
     # enable kdump service: systemd | sys-v
     /bin/systemctl enable kdump.service || /sbin/chkconfig kdump on || log_error "- Failed to enable kdump!"
     log_info "- Enabled kdump service"
+
+    # Wait for 60 sec to avoid system hangs when rebooting from 2nd kernel to 1st kernel
+    sleep 60
 }
 
 # Restart kdump service
