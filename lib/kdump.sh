@@ -39,6 +39,8 @@ readonly K_LOCK_AREA="/root"
 readonly K_LOCK_SSH_ID_RSA="${K_LOCK_AREA}/.ssh/id_rsa_kdump_test"
 readonly K_RETRY_COUNT=1000
 
+set -x
+
 if [ ! -d "${K_TMP_DIR}" ]; then
     log_info "Creating test tmp dir: ${K_TMP_DIR}"
     mkdir -p "${K_TMP_DIR}"
@@ -191,7 +193,12 @@ kdump_prepare()
         local default
         default=/boot/vmlinuz-$(uname -r)
         [ ! -s "$default" ] && default=/boot/vmlinux-$(uname -r)
-        /sbin/grubby --set-default="${default}"
+
+        # temporarily comment out this line to set default to grubby
+        # seems if it's executed too quickly with rebuilding kdump img,
+        # system would hange after rebooting.
+        # need to figure out why it requires to set default to grub
+        # /sbin/grubby --set-default="${default}"
 
         # for uncompressed kernel, i.e. vmlinux
         [[ "${default}" == *vmlinux* ]] && {
@@ -239,7 +246,7 @@ kdump_prepare()
     log_info "- Enabled kdump service"
 
     # Wait for 60 sec to avoid system hangs when rebooting from 2nd kernel to 1st kernel
-    sleep 60
+    # sleep 60
 }
 
 # Restart kdump service
