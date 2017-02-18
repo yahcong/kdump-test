@@ -4,14 +4,57 @@
 . ../lib/log.sh
 . ../lib/kdump.sh
 
-check_vmcore_file()
+
+# This func is used to get the full path of the vmcore.
+# If 0 or > 1 vmcore is found, it will report error and terminate the test.
+# It searches vmcore either named 'vmcore' or 'vmcore.flat', depends on the
+# the first func parameter passed in.
+# If it's 'flat', it searches for 'vmcore.flat'. Otherwise 'vmcore'.
+get_vmcore_path()
 {
-    log_info "- Find vmcore file"
-    find /var/crash/ -newer /etc/kdump.conf -name "vmcore*" -type f | grep vmcore
-    [ $? -ne 0 ] && log_error "- Failed to find vmcore!"
-    log_info "- Found vmcore file successfully!"
-    log_info $(ls "${K_DEFAULT_PATH}")
+    local vmcore_format=$1
+    local vmcore_path=""
+
+    local vmcore_name="vmcore"
+    if [[ ${vmcore_format} == "flat" ]]; then
+        vmcore_name="vmcore.flat"
+    fi
+
+    [ -f "${K_PATH}" ] && vmcore_path=$(cat "${K_PATH}") || vmcore_path="${K_DEFAULT_PATH}"
+
+    if [ -f "${K_NFS}" ]; then
+        vmcore_path="$(cat "${K_NFS}")${vmcore_path}" # need update
+    fi
+
+    count=$(find "${vmcore_path}" -newer /etc/kdump.conf -name "${vmcore_name}" -type f | wc -l)
+    if [ $count -eq 1 ]; then
+        local vmcore_full_path
+        vmcore_full_path=$(find "${vmcore_path}" -newer /etc/kdump.conf -name "${vmcore_name}" -type f)
+        echo $vmcore_full_path
+    elif [ $count -gt 1 ]; then
+        log_error "- More than 1 vmcore found in ${vmcore_path}. Expect only 1."
+    else
+        log_error "- No vmcore found in ${vmcore_path}"
+    fi
 }
+
+# Param:
+#   vmcore_format: it's either empty or 'flat'
+validate_vmcore_exists()
+{
+    local vmcore_format=$1
+
+    log_info "- Validate if vmcore exists"
+    local vmcore_full_path=""
+    vmcore_full_path=$(get_vmcore_path $vmcore_format)
+
+    if [ ! -z "${vmcore_full_path}" ]; then
+        log_info "- Found vmcore file at ${vmcore_full_path}"
+    else
+        log_error "- No vmcore is found."
+    fi
+}
+
 
 analyse_by_crash()
 {
@@ -104,37 +147,6 @@ EOF
 
     report_file ${TESTAREA}/crash.cmd
     report_file ${TESTAREA}/crash.log
-}
-
-get_vmcore_path()
-{
-    local path=""
-    local vmcorepath=""
-
-    [ -f "${K_PATH}" ] && path=$(cat "${K_PATH}") || path="${K_DEFAULT_PATH}"
-
-    if [ -f "${K_NFS}" ]; then
-        vmcorepath="$(cat "${K_NFS}")${path}" # need update
-    else
-        vmcorepath="${path}"
-    fi
-
-    count=$(find "${vmcorepath}" -name "vmcore" -type f | wc -l)
-    if [ $count -gt 0 ]; then
-        vmcore=$(find "${vmcorepath}" -name "vmcore" -type f 2>/dev/null | head -1)
-        echo $vmcore
-    else
-        log_error "- No vmcore found in ${vmcorepath}"
-    fi
-}
-
-check_depend_package()
-{
-    for args in $@; do
-        rpm -q $args || yum install -y $args || log_error "- Install package $args failed!"
-    done
-
-    log_info "- Check depend pakcage finished."
 }
 
 # To Do

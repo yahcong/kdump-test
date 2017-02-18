@@ -22,10 +22,10 @@
 
 analyse_crash()
 {
-    check_depend_package kernel-debuginfo crash
+    install_rpm_package kernel-debuginfo crash
     analyse_by_crash
+    ready_to_exit
 }
 
 log_info "- Start"
 analyse_crash
-log_info "- End!"

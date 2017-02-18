@@ -19,6 +19,7 @@ LABEL=${LABEL:-label-kdump}
 RAW=${RAW:-no}
 TESTAREA=${TESTAREA:-"/mnt/testarea"}
 
+C_REBOOT="./C_REBOOT"
 K_TMP_DIR="${TESTAREA}/temp/"
 K_REBOOT="${K_TMP_DIR}/K_REBOOT"
 
@@ -54,8 +55,10 @@ fi
 
 install_rpm_package()
 {
-    if [[ $# -gt 0 ]];then
-        yum install -y "$@" || log_error "- Can not install rpm: $*"
+    if [[ $# -gt 0 ]]; then
+        for args in $@; do
+            rpm -q $args || yum install -y $args || log_error "- Install package $args failed!"
+        done
         log_info "- Installed $* successfully"
     fi
 }
@@ -71,18 +74,27 @@ report_hwinfo()
 {
     echo -e "Architecture:" >> "${K_HWINFO_FILE}"
     arch >> "${K_HWINFO_FILE}"
-    echo -e "\n----\nCPU Info:" >> "${K_HWINFO_FILE}"
+
+    echo -e "\n----\n"
+    echo -e "CPU Info:" >> "${K_HWINFO_FILE}"
     lscpu >> "${K_HWINFO_FILE}"
-    echo -e "\n----\nMemory Info:" >> "${K_HWINFO_FILE}"
+
+    echo -e "\n----\n"
+    echo -e "Memory Info:" >> "${K_HWINFO_FILE}"
     free -h >> "${K_HWINFO_FILE}"
-    echo -e "\n----\nStorage Info:" >> "${K_HWINFO_FILE}"
+
+    echo -e "\n----\n"
+    echo -e "Storage Info:" >> "${K_HWINFO_FILE}"
     lsblk >> "${K_HWINFO_FILE}"
-    echo -e "\n----\nNetwork Info:" >> "${K_HWINFO_FILE}"
+
+    echo -e "\n----\n"
+    echo -e "Network Info:" >> "${K_HWINFO_FILE}"
     ip link >> "${K_HWINFO_FILE}"
     for i in $(ip addr | grep -i ': <' | grep -v 'lo:' | awk '{print $2}' | sed "s/://g") ; do
         echo "--$i--" >> "${K_HWINFO_FILE}"
         ethtool -i $i >> "${K_HWINFO_FILE}"
     done
+
     report_file "${K_HWINFO_FILE}"
 }
 
@@ -243,7 +255,7 @@ kdump_prepare()
 
     # enable kdump service: systemd | sys-v
     /bin/systemctl enable kdump.service || /sbin/chkconfig kdump on || log_error "- Failed to enable kdump!"
-    log_info "- Enabled kdump service"
+    log_info "- Enabled kdump service."
 
     # Wait for 60 sec to avoid system hangs when rebooting from 2nd kernel to 1st kernel
     # sleep 60

@@ -23,8 +23,6 @@
 . ../lib/crash.sh
 . ../lib/log.sh
 
-C_REBOOT="./C_REBOOT"
-
 crash_oops_BUG()
 {
     if [[ ! -f "${C_REBOOT}" ]]; then
@@ -35,25 +33,19 @@ crash_oops_BUG()
         insmod oops_BUG/oops_BUG.ko || log_error "- Failed to insmod module."
 
         touch "${C_REBOOT}"
-        sync
+        sync;sync;sync
         log_info "- Triggering crash."
-
         # workaround for bug 810201
         echo 1 > /proc/sys/kernel/panic_on_opps
-
+        sync;sync;sync
         echo 1 > /proc/crasher
-        if [[ $? -ne 0 ]]; then
-            log_error "- Failed to trigger oops_BUG."
-        fi
 
         # Wait for a while
-        sleep 3600
-        log_error "- Failed to trigger oops_BUG after waiting for 3600s."
+        sleep 60
+        log_error "- Failed to trigger oops_BUG after waiting for 60s."
     else
         rm -f "${C_REBOOT}"
     fi
-    
-    check_vmcore_file
     ready_to_exit
 }
 

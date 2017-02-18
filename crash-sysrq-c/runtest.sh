@@ -23,29 +23,27 @@
 . ../lib/crash.sh
 . ../lib/log.sh
 
-C_REBOOT="./C_REBOOT"
-
 crash_sysrq_c()
 {
     # May need disable avc check
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
-        # add config kdump.conf in here if need
         kdump_restart
         report_system_info
+
         touch "${C_REBOOT}"
-        sync
+        sync;sync;sync
         log_info "- Triggering crash."
         echo c > /proc/sysrq-trigger
 
-        sleep 3600
-        log_error "- Failed to trigger crash after waiting for 3600s."
+        sleep 60
+        log_error "- Failed to trigger crash after waiting for 60s."
     else
         rm -f "${C_REBOOT}"
-    fi
 
-    # add check vmcore test in here if need
-    check_vmcore_file
+        # add check vmcore test in here if need
+        validate_vmcore_exists
+    fi
     ready_to_exit
 }
 

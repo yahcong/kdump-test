@@ -96,6 +96,7 @@ clean_up()
     cp -f "${K_BACKUP_DIR}"/kdump.conf /etc/kdump.conf
 
     log_info "- Clean up is done."
+    ready_to_exit
 }
 
 log_info "- Start"

@@ -23,18 +23,9 @@
 . ../lib/crash.sh
 . ../lib/log.sh
 
-C_REBOOT="./C_REBOOT"
-
+# This is a muli-host tests has to be ran on both Server/Client.
 ssh_sysrq_test()
 {
-
-    # Check if servers/client hostname/ip are provided from cmdline
-    if [[ ! -z "$1" ]]; then
-        ${SERVERS:=$1}
-    fi
-    if [[ ! -z "$2" ]]; then
-        ${CLIENTS:=$2}
-    fi
     if [ -z "${SERVERS}" -o -z "${CLIENTS}" ]; then
         log_error "No Server or Client hostname"
     fi
@@ -56,7 +47,7 @@ ssh_sysrq_test()
             report_system_info
             log_info "- Triggering crash."
             touch "${C_REBOOT}"
-            sync
+            sync;sync;sync
             # triger panic
             echo c > /proc/sysrq-trigger
 
@@ -67,12 +58,11 @@ ssh_sysrq_test()
             log_error "- Failed to trigger crash."
         fi
         if [[ $(get_role) == "server" ]]; then
-
             log_info "- Waiting for signal at ${done_sync_port} from client that test is done at client."
             wait_for_signal ${done_sync_port}
 
             log_info "- Checking vmcore on ssh server."
-            check_vmcore_file
+            validate_vmcore_exists  flat
         fi
     else
         rm -f "${C_REBOOT}"

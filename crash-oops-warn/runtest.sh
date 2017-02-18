@@ -20,43 +20,38 @@
 . ../lib/crash.sh
 . ../lib/log.sh
 
-C_REBOOT="./C_REBOOT"
-
 crash-oops-warn()
 {
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare
         kdump_restart
         report_system_info
-        log_info "making and installing crash-warn.ko"
+
+        log_info "- Making and installing crash-warn.ko"
         make_module "crash-warn"
 
         # Set panic_on_warn
         log_info "- # echo 1 > /proc/sys/kernel/panic_on_warn."
         echo 1 > /proc/sys/kernel/panic_on_warn
         if [[ $? -ne 0 ]]; then
-            log_error "Error to echo 1 > /proc/sys/kernel/panic_on_warn"
+            log_error "- Error to echo 1 > /proc/sys/kernel/panic_on_warn"
         fi
 
         # Trigger panic_on_warn
         touch "${C_REBOOT}"
-        sync
+        sync;sync;sync
         log_info "- Triggering crash."
-        insmod crash-warn/crash-warn.ko || log_error "Failed to insmod module."
-        if [ $? -ne 0 ]; then
-            log_error "Fail to trigger panic_on_warn"
-        fi
+        insmod crash-warn/crash-warn.ko || log_error "- Failed to insmod module."
 
         # Wait for a while
-        sleep 3600
-        log_error "- Failed to trigger panic_on_warn after waiting for 3600s."
+        sleep 60
+        log_error "- Failed to trigger panic_on_warn after waiting for 60s."
 
     else
         rm -f "${C_REBOOT}"
+        # validate vmcore
+        validate_vmcore_exists
     fi
-
-    # validate vmcore
-    check_vmcore_file
     ready_to_exit
 }
 

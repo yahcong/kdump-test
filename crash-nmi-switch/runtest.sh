@@ -23,8 +23,6 @@
 . ../lib/crash.sh
 . ../lib/log.sh
 
-C_REBOOT="./C_REBOOT"
-
 crash_nmi_switch()
 {
     if [[ ! -f "${C_REBOOT}" ]]; then
@@ -35,21 +33,20 @@ crash_nmi_switch()
         log_info "- Load IPMI modules"
         systemctl enable ipmi
         systemctl start ipmi || service ipmi start || log_error "- Failed to start ipmi service."
-    
+
         echo 1 > /proc/sys/kernel/panic_on_unrecovered_nmi
         touch "${C_REBOOT}"
-        sync
         log_info "- Triggering crash."
+        sync;sync;sync
         ipmitool chassis power diag
 
         # Wait for a while
-        sleep 3600
-        log_error "- Failed to trigger IPMI crash after waiting for 3600s."
+        sleep 60
+        log_error "- Failed to trigger IPMI crash after waiting for 60s."
     else
         rm -f "${C_REBOOT}"
+        validate_vmcore_exists
     fi
-
-    check_vmcore_file
     ready_to_exit
 }
 
