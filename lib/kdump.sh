@@ -416,6 +416,7 @@ configure_kdump_conf()
     else
         log_error "- Null dump_device/uuid/label or wrong type."
     fi
+    kdump_restart
 }
 
 make_module()
