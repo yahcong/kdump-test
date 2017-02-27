@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/dump-fs-raw
+owner="Qiao Zhao"
+description="kdump-test for dump_fs_raw"
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true
