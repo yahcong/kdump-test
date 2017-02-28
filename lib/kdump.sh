@@ -247,7 +247,14 @@ kdump_prepare()
             log_info "- Reboot system for system preparing."
             reboot_system
         }
+    fi
 
+    # Check if memory is reserved before starting kdump service.
+    # No matter it's rebooted or not.
+    # Print cmdline and exit test with an error message if it's not reserved,
+    if [ "$(cat /sys/kernel/kexec_crash_size)" -eq 0 ]; then
+        log_info "- Kernel Boot Cmdline is: $(cat /proc/cmdline)"
+        log_error "- No memory is reserved for crashkernel!"
     fi
 
     # install kexec-tools package
