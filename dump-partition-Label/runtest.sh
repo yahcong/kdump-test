@@ -33,7 +33,7 @@ dump_partition_Label()
         MP=/ext4
         OPTION="label"
         LABEL="label-vmcore"
-        configure_kdump_conf
+        config_kdump_target
         report_system_info
 
         touch "${C_REBOOT}"

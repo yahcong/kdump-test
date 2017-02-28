@@ -32,7 +32,7 @@ dump_partition_UUID()
         KPATH=/vmcore
         MP=/ext4
         OPTION="uuid"
-        configure_kdump_conf
+        config_kdump_target
         report_system_info
 
         touch "${C_REBOOT}"

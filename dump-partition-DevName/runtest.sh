@@ -32,7 +32,7 @@ dump_partition_DevName()
         MP=/ext4
         KPATH=/vmcore
         OPTION=""
-        configure_kdump_conf
+        config_kdump_target
         report_system_info
 
         touch "${C_REBOOT}"

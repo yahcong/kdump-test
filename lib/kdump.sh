@@ -356,7 +356,7 @@ label_fs()
 
 # Config kdump.conf
 # Not done yet
-configure_kdump_conf()
+config_kdump_target()
 {
     # To Do:
     # Allow parameters like:
