@@ -26,15 +26,13 @@ get_vmcore_path()
         vmcore_path="$(cat "${K_NFS}")${vmcore_path}" # need update
     fi
 
-    count=$(find "${vmcore_path}" -newer /etc/kdump.conf -name "${vmcore_name}" -type f | wc -l)
-    if [ $count -eq 1 ]; then
-        local vmcore_full_path
-        vmcore_full_path=$(find "${vmcore_path}" -newer /etc/kdump.conf -name "${vmcore_name}" -type f)
-        echo $vmcore_full_path
-    elif [ $count -gt 1 ]; then
-        log_error "- More than 1 vmcore found in ${vmcore_path}. Expect only 1."
+    local vmcore_full_path
+    vmcore_full_path=$(find "${vmcore_path}" -newer /etc/kdump.conf -name "${vmcore_name}" -type f)
+    count=$(echo $vmcore_full_path | wc -w)
+    if [ $count -gt 1 ]; then
+        log_error "- More than 1 vmcore is found in ${vmcore_path}. Expect 1 or 0."
     else
-        log_error "- No vmcore found in ${vmcore_path}"
+        echo $vmcore_full_path
     fi
 }
 
