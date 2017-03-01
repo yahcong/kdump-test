@@ -308,6 +308,7 @@ def_kdump_mem()
 }
 
 
+
 # Append one option to kdump.conf
 append_config()
 {
@@ -708,6 +709,19 @@ config_nfs()
     fi
     # TODO: Add kdump configuration for NFS server.
 }
+
+# To trigger a simple crash
+trigger_sysrq_crash()
+{
+    touch "${C_REBOOT}"
+    sync;sync;sync
+    log_info "- Triggering crash."
+    echo c > /proc/sysrq-trigger
+
+    sleep 60
+    log_error "- Failed to trigger crash after waiting for 60s."
+}
+
 
 config_nfs_ipv6()
 {

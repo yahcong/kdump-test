@@ -45,14 +45,9 @@ ssh_sysrq_test()
         if [[ $(get_role) == "client" ]]; then
             kdump_restart
             report_system_info
-            log_info "- Triggering crash."
-            touch "${C_REBOOT}"
-            sync;sync;sync
-            # triger panic
-            echo c > /proc/sysrq-trigger
 
-            sleep 3600
-            log_info "- Failed! Crash is not triggered after waiting for 3600s."
+            trigger_sysrq_crash
+
             log_info "- Notifying server that test is done at client."
             send_notify_signal "${SERVERS}" ${done_sync_port}
             log_error "- Failed to trigger crash."

@@ -36,13 +36,7 @@ dump_partition_Label()
         config_kdump_target
         report_system_info
 
-        touch "${C_REBOOT}"
-        sync;sync;sync
-        log_info "- Triggering crash."
-        echo c > /proc/sysrq-trigger
-
-        sleep 60
-        log_error "- Failed to trigger crash after waiting for 60s."
+        trigger_sysrq_crash
     else
         rm -f "${C_REBOOT}"
 
