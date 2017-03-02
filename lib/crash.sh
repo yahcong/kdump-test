@@ -53,6 +53,21 @@ validate_vmcore_exists()
     fi
 }
 
+validate_vmcore_not_exists()
+{
+    local vmcore_format=$1
+
+    log_info "- Validate if vmcore not exists"
+    local vmcore_full_path=""
+    vmcore_full_path=$(get_vmcore_path $vmcore_format)
+
+    if [ ! -z "${vmcore_full_path}" ]; then
+        log_error "- Found vmcore file at ${vmcore_full_path}"
+    else
+        log_info "- No vmcore is found."
+    fi
+}
+
 
 analyse_by_crash()
 {
