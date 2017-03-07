@@ -20,6 +20,8 @@ get_vmcore_path()
     local vmcore_name="vmcore"
     if [[ ${vmcore_format} == "flat" ]]; then
         vmcore_name="vmcore.flat"
+    elif [[ ${vmcore_format} == "dmesg" ]]; then
+        vmcore_name="vmcore-dmesg.txt"
     fi
 
     [ -f "${K_PATH}" ] && vmcore_path=$(cat "${K_PATH}") || vmcore_path="${K_DEFAULT_PATH}"
