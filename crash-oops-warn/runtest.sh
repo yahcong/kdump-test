@@ -13,34 +13,28 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# Author: Xiaowu Wu<xiawu@redhat.com>
+# Author: Xiaowu Wu <xiawu@redhat.com>
 
-# library
 . ../lib/kdump.sh
+. ../lib/kdump_report.sh
 . ../lib/crash.sh
-. ../lib/log.sh
 
 crash-oops-warn()
 {
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare
-        kdump_restart
         report_system_info
-
-        log_info "- Making and installing crash-warn.ko"
-        make_module "crash-warn"
 
         # Set panic_on_warn
         log_info "- # echo 1 > /proc/sys/kernel/panic_on_warn."
         echo 1 > /proc/sys/kernel/panic_on_warn
-        if [[ $? -ne 0 ]]; then
-            log_error "- Error to echo 1 > /proc/sys/kernel/panic_on_warn"
-        fi
+        [[ $? -ne 0 ]] && log_error "- Error to echo 1 > /proc/sys/kernel/panic_on_warn"
 
         # Trigger panic_on_warn
         touch "${C_REBOOT}"
-        sync;sync;sync
+        sync
         log_info "- Triggering crash."
+        make_module "crash-warn"
         insmod crash-warn/crash-warn.ko || log_error "- Failed to insmod module."
 
         # Wait for a while
@@ -49,11 +43,11 @@ crash-oops-warn()
 
     else
         rm -f "${C_REBOOT}"
-        # validate vmcore
         validate_vmcore_exists
+        ready_to_exit
     fi
-    ready_to_exit
 }
 
 log_info "- Start"
 crash-oops-warn
+

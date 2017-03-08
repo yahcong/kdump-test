@@ -17,34 +17,34 @@
 #
 # Author: Qiao Zhao <qzhao@redhat.com>
 
-# Source necessary library
 . ../lib/kdump.sh
+. ../lib/kdump_report.sh
 . ../lib/crash.sh
-. ../lib/log.sh
 
 crash_altsysrq_c()
 {
     if [ ! -f ${C_REBOOT} ]; then
         kdump_prepare
-        kdump_restart
         report_system_info
 
         make_module "altsysrq"
         insmod ./altsysrq/altsysrq.ko || log_error "- Fail to insmod altsysrq."
 
         touch "${C_REBOOT}"
-        sync;sync;sync
+        sync
         log_info "- Triggering crash."
         echo 1 > /proc/sys/kernel/sysrq
-        sync;sync;sync
+        sync
         echo c > /proc/driver/altsysrq
+
         log_error "- Failed to trigger panic!"
     else
         rm "${C_REBOOT}"
         validate_vmcore_exists
+        ready_to_exit
     fi
-    ready_to_exit
 }
 
 log_info "- Start"
 crash_altsysrq_c
+

@@ -15,29 +15,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Song Qihan<qsong@redhat.com>
+# Author: Song Qihan <qsong@redhat.com>
 # Update: Qiao Zhao <qzhao@redhat.com>
 
-# Source necessary library
 . ../lib/kdump.sh
+. ../lib/kdump_report.sh
 . ../lib/crash.sh
-. ../lib/log.sh
 
 crash_oops_BUG()
 {
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare
-        kdump_restart
         report_system_info
+
         make_module "oops_BUG"
         insmod oops_BUG/oops_BUG.ko || log_error "- Failed to insmod module."
 
         touch "${C_REBOOT}"
-        sync;sync;sync
+        sync
         log_info "- Triggering crash."
         # workaround for bug 810201
         echo 1 > /proc/sys/kernel/panic_on_opps
-        sync;sync;sync
+        sync
         echo 1 > /proc/crasher
 
         # Wait for a while
@@ -45,9 +44,11 @@ crash_oops_BUG()
         log_error "- Failed to trigger oops_BUG after waiting for 60s."
     else
         rm -f "${C_REBOOT}"
+        validate_vmcore_exists
+        ready_to_exit
     fi
-    ready_to_exit
 }
 
 log_info "- Start"
 crash_oops_BUG
+

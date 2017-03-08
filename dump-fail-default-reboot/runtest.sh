@@ -17,10 +17,9 @@
 #
 # Author: Wenjie Cai<wcai@redhat.com>
 
-# Source necessary library
 . ../lib/kdump.sh
+. ../lib/kdump_report.sh
 . ../lib/crash.sh
-. ../lib/log.sh
 
 dump_fail_default_reboot()
 {
@@ -29,10 +28,8 @@ dump_fail_default_reboot()
         kdump_prepare
 
         # makedumpfile options
-        append_config "core_collector makedumpfile nosuchoption"
-        append_config "default reboot"
-
-        kdump_restart
+        config_kdump_any "default reboot"
+        config_kdump_filter "-nosuchoption"
         report_system_info
 
         trigger_sysrq_crash
@@ -47,3 +44,4 @@ dump_fail_default_reboot()
 
 log_info "- Start"
 dump_fail_default_reboot
+

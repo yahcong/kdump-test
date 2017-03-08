@@ -15,31 +15,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Song Qihan<qsong@redhat.com>
+# Author: Song Qihan <qsong@redhat.com>
 # Update: Qiao Zhao <qzhao@redhat.com>
 
-# Source necessary library
 . ../lib/kdump.sh
+. ../lib/kdump_report.sh
 . ../lib/crash.sh
-. ../lib/log.sh
 
 crash_sysrq_c()
 {
-    # May need disable avc check
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
-        kdump_restart
         report_system_info
-
         trigger_sysrq_crash
     else
         rm -f "${C_REBOOT}"
-
-        # add check vmcore test in here if need
         validate_vmcore_exists
+        ready_to_exit
     fi
-    ready_to_exit
+
 }
 
 log_info "- Start"
 crash_sysrq_c
+

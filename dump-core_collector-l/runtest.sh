@@ -17,30 +17,25 @@
 #
 # Author: Yahuan Cong<ycong@redhat.com>
 
-# Source necessary library
 . ../lib/kdump.sh
+. ../lib/kdump_report.sh
 . ../lib/crash.sh
-. ../lib/log.sh
+
 dump_core_collector_l()
 {
-    # May need disable avc check
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 
-        opt="-l -d 31"
-        append_config "core_collector makedumpfile ${opt}"
-        kdump_restart
-
+        opt="-c -d 31"
+        config_kdump_fitler "${opt}"
         report_system_info
 
         trigger_sysrq_crash
     else
         rm -f "${C_REBOOT}"
-
-        # add check vmcore test in here if need
         validate_vmcore_exists
+        ready_to_exit
     fi
-    ready_to_exit
 }
 
 log_info "- Start"

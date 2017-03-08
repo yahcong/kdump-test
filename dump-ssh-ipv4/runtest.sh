@@ -20,6 +20,7 @@
 
 # Source necessary library
 . ../lib/kdump.sh
+. ../lib/kdump_report
 . ../lib/crash.sh
 . ../lib/log.sh
 
@@ -34,12 +35,11 @@ ssh_sysrq_test()
     export CLIENTS=${CLIENTS}
 
     # port used for client/server sync
-    local done_sync_port
-    done_sync_port=35413
+    local done_sync_port=35413
 
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare
-        prepare_for_multihost
+        multihost_prepare
         config_ssh
 
         if [[ $(get_role) == "client" ]]; then
@@ -51,22 +51,21 @@ ssh_sysrq_test()
             log_info "- Notifying server that test is done at client."
             send_notify_signal "${SERVERS}" ${done_sync_port}
             log_error "- Failed to trigger crash."
-        fi
-        if [[ $(get_role) == "server" ]]; then
-            log_info "- Waiting for signal at ${done_sync_port} from client that test is done at client."
+
+        elif [[ $(get_role) == "server" ]]; then
+            log_info "- Waiting at ${done_sync_port} for signal from client that test/crash is done."
             wait_for_signal ${done_sync_port}
 
             log_info "- Checking vmcore on ssh server."
-            validate_vmcore_exists  flat
+            validate_vmcore_exists flat
+            ready_to_exit
         fi
     else
         rm -f "${C_REBOOT}"
-
-        log_info "- Sending signal server that crash is done at client."
+        log_info "- Notifying server that crash is done at client."
         send_notify_signal "${SERVERS}" ${done_sync_port}
-        log_info "- Client is rebooted back to 1st kernel successfully."
+        ready_to_exit
     fi
-    ready_to_exit
 }
 
 log_info "- Start"

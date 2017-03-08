@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 
 ((LIB_CRASH_SH)) && return || LIB_CRASH_SH=1
+
 . ../lib/log.sh
 . ../lib/kdump.sh
 
 
-# This func is used to get the full path of the vmcore.
-# If 0 or > 1 vmcore is found, it will report error and terminate the test.
-# It searches vmcore either named 'vmcore' or 'vmcore.flat', depends on the
-# the first func parameter passed in.
-# If it's 'flat', it searches for 'vmcore.flat'. Otherwise 'vmcore'.
+# @usage: get_vmcore_path <vmcore_format> 
+# @description: 
+#   get the full path to the vmcore
+#   it searches vmcore/vmcroe.flat/vmcore-dmesg based on the <vmcore_format>
+# @param1: vmcore_format # "vmcore" "flat" "dmesg". default to "dmesg"
+# @return: if >1 vmcore is found, exit with error.
 get_vmcore_path()
 {
     local vmcore_format=$1
@@ -36,39 +38,78 @@ get_vmcore_path()
     fi
 }
 
-# Param:
-#   vmcore_format: it's either empty or 'flat'
+
+# @usage: validate_vmcore_exists <vmcore_format> 
+# @description: 
+#   check whether the vmcore exists
+#   it checks vmcore/vmcroe.flat/vmcore-dmesg based on the <vmcore_format>
+# @param1: vmcore_format # "vmcore" "flat" "dmesg". default to "dmesg"
+# @return: if no vmcore is found, exit with error.
 validate_vmcore_exists()
 {
     local vmcore_format=$1
 
     log_info "- Validate if vmcore exists"
-    local vmcore_full_path=""
-    vmcore_full_path=$(get_vmcore_path $vmcore_format)
+    local vmcore_full_path=$(get_vmcore_path $vmcore_format)
 
     if [ ! -z "${vmcore_full_path}" ]; then
         log_info "- Found vmcore file at ${vmcore_full_path}"
     else
-        log_error "- No vmcore is found."
+        log_error "- No vmcore file is found."
     fi
 }
 
+# @usage: validate_vmcore_not_exists <vmcore_format> 
+# @description: 
+#   check whether the vmcore doesn't exists
+#   it checks vmcore/vmcroe.flat/vmcore-dmesg based on the <vmcore_format>
+# @param1: vmcore_format # "vmcore" "flat" "dmesg". default to "dmesg"
+# @return: if vmcore is found, exit with error.
 validate_vmcore_not_exists()
 {
     local vmcore_format=$1
 
     log_info "- Validate if vmcore not exists"
-    local vmcore_full_path=""
-    vmcore_full_path=$(get_vmcore_path $vmcore_format)
+    local vmcore_full_path=$(get_vmcore_path $vmcore_format)
 
     if [ ! -z "${vmcore_full_path}" ]; then
         log_error "- Found vmcore file at ${vmcore_full_path}"
     else
-        log_info "- No vmcore is found."
+        log_info "- No vmcore file is found."
     fi
 }
 
 
+# @usage: crash_command <args> <vmlinux> <vmcore>
+# @description: run crash cmd to analyze vmcore with pre-defined crash.cmd
+# @param1: args  # crash args
+# @param2: aux   # location of vmlinux
+# @param3: core  # location of vmcore
+crash_command()
+{
+    local args=$1
+    local aux=$2
+    local core=$3
+
+    touch ${TESTAREA}/crash.log
+
+    log_info "- Check command output of this session"
+    log_info "- # crash ${args} -i ${TESTAREA}/crash.cmd ${aux} ${core}"
+    crash ${args} -i "${TESTAREA}/crash.cmd" ${aux} ${core} > "${TESTAREA}/crash.log" 2>&1 <<EOF
+EOF
+    code=$?
+    report_file ${TESTAREA}/crash.cmd
+    report_file ${TESTAREA}/crash.log
+
+    [ ${code} -ne 0 ] && log_error "- Crash returns error code ${code}"
+}
+
+
+# @usage: crash_command <args> <vmlinuz> <vmcore>
+# @description: analyze vmcore by crash
+# @param1: args  # crash args
+# @param2: aux   # vmlinuz with debuginfo
+# @param3: core  # location of vmcore
 analyse_by_crash()
 {
     # Also check command output of this session.
@@ -130,43 +171,26 @@ exit
 EOF
     fi
 
-    vmlinux="/usr/lib/debug/lib/modules/$(uname -r)/vmlinux"
-    [ ! -f "${vmlinux}" ] && log_error "- Vmlinux not found."
+    local vmlinux="/usr/lib/debug/lib/modules/$(uname -r)/vmlinux"
+    [ ! -f "${vmlinux}" ] && log_error "- Vmlinux is not found."
 
-    # save vmcore path to $vmcore.
-    local vmcore=""
-
-    vmcore=$(get_vmcore_path)
-
+    local vmcore=$(get_vmcore_path)
     crash_command "" "${vmlinux}" "${vmcore}"
 }
 
-crash_command()
-{
-    local args=$1; shift
-    local aux=$1; shift
-    local core=$1; shift
-    touch ${TESTAREA}/crash.log
 
-    log_info "- Check command output of this session"
-    log_info "- # crash ${args} -i ${TESTAREA}/crash.cmd ${aux} ${core}"
-    crash ${args} -i "${TESTAREA}/crash.cmd" ${aux} ${core} > "${TESTAREA}/crash.log" 2>&1 <<EOF
-EOF
 
-    code=$?
-    if [ ${code} -ne 0 ]; then
-        log_error "- Crash returns error code ${code}"
-    fi
-
-    report_file ${TESTAREA}/crash.cmd
-    report_file ${TESTAREA}/crash.log
-}
-
-# To Do
+# To-Do
 analyse_live()
 {
-    echo "analyse in live system"
+    echo "analyse live system"
 }
+
+analyse_dmesg()
+{
+    echo "analyse vmcore-dmesg.txt"
+}
+
 
 analyse_by_basic()
 {
@@ -181,11 +205,6 @@ analyse_by_gdb()
 analyse_by_readelf()
 {
     echo "analyse vmcore by readelf"
-}
-
-analyse_by_dmesg()
-{
-    echo "analyse vmcore-dmesg.txt"
 }
 
 analyse_by_trace_cmd()

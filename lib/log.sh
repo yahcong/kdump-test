@@ -18,10 +18,12 @@
 
 
 ((LIB_LOG_SH)) && return || LIB_LOG_SH=1
-
 readonly K_LOG_FILE="./result.log"
 
-# Check if system is beaker environment.
+
+# @usage: is_beaker_env
+# @description: check it is a beaker environment
+# #return: 0 - yes, 1 - no
 is_beaker_env()
 {
     if [ -f /usr/bin/rhts-environment.sh ]; then
@@ -33,16 +35,11 @@ is_beaker_env()
     fi
 }
 
-############################
-# Print Log info into ${K_LOG_FILE}
-# Globals:
-#   K_LOG_FILE
-# Arguments:
-#   $1 - Log level: ERROR, INFO, WARN
-#   $2 - Log message
-# Return:
-#   None
-############################
+
+# @usage: log <level> <mesg>
+# @description: Print Log info into ${K_LOG_FILE}
+# @param1: level # ERROR, INFO, WARN
+# @param2: mesg
 log()
 {
     local level="$1"
@@ -55,11 +52,10 @@ log()
     fi
 }
 
-############################
-# Report file to beaker server
-# Param:
-#   $1 - Full File Path
-############################
+
+# @usage: report_file <filename>
+# @description: report file to beaker server
+# @param1: filename
 report_file()
 {
     local filename="$1"
@@ -76,26 +72,26 @@ report_file()
 }
 
 
-# Print info message
-# Param:
-#   $1 - Info message
+# @usage: log_info <mesg>
+# @description: log INFO message
+# @param1: mesg
 log_info()
 {
     log "INFO" "$@"
 }
 
-# Print warn message
-# Param:
-#   $1 - Info message
+# @usage: log_warn <mesg>
+# @description: log WARN message
+# @param1: mesg
 log_warn()
 {
     log "WARN" "$@"
 }
 
 
-# Print error message and exit
-# Param:
-#   $1 - Error message
+# @usage: log_error <mesg>
+# @description: log ERROR message and exit
+# @param1: mesg
 log_error()
 {
     log "ERROR" "$@"
@@ -104,9 +100,11 @@ log_error()
 }
 
 
-# Print test status before exiting
-# Param:
-#   $1 - test status (1- Fail  Other - Pass)
+# @usage: ready_to_exit <exit_code>
+# @description:
+#       report test log/status and exit
+#       abort test if fail
+# @param1: exit_code  # (1- Fail  Other - Pass)
 ready_to_exit()
 {
     report_file "${K_LOG_FILE}"
@@ -119,17 +117,18 @@ ready_to_exit()
             report_result "${TEST}" "PASS" "0"
         fi
     else
-        if [[ $1 == "1" ]]; then
+        [[ $1 == "1" ]] && {
             log_info "- [FAIL] Please check test logs!"
             exit 1
-        else
-            log_info "- [PASS] Tests finished successfully!"
-        fi
+        }
+        log_info "- [PASS] Tests finished successfully!"
+        exit 0
     fi
 }
 
 
-# Reboot system
+# @usage: reboot_system
+# @description: reboot system
 reboot_system()
 {
     /bin/sync

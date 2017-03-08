@@ -18,12 +18,12 @@
 # Author: Qiao Zhao <qzhao@redhat.com>
 
 . ../lib/crash.sh
-. ../lib/log.sh
 
 analyse_crash()
 {
-    install_rpm_package kernel-debuginfo crash
+    crash_prepare
     analyse_by_crash
+
     ready_to_exit
 }
 

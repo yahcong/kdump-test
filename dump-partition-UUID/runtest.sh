@@ -17,33 +17,30 @@
 #
 # Author: Wenjie Cai<wcai@redhat.com>
 
-# Source necessary library
 . ../lib/kdump.sh
+. ../lib/kdump_report.sh
 . ../lib/crash.sh
-. ../lib/log.sh
 
 dump_partition_UUID()
 {
     # May need disable avc check
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
-        kdump_restart
 
         KPATH=/vmcore
         MP=/ext4
         OPTION="uuid"
-        config_kdump_target
+        config_kdump_fs
         report_system_info
 
         trigger_sysrq_crash
     else
         rm -f "${C_REBOOT}"
-
-        # add check vmcore test in here if need
         validate_vmcore_exists
+        ready_to_exit
     fi
-    ready_to_exit
 }
 
 log_info "- Start"
 dump_partition_UUID
+

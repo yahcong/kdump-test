@@ -15,29 +15,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Song Qihan<qsong@redhat.com>
+# Author: Song Qihan <qsong@redhat.com>
 # Update: Qiao Zhao <qzhao@redhat.com>
 
-# Source necessary library
 . ../lib/kdump.sh
+. ../lib/kdump_report.sh
 . ../lib/crash.sh
-. ../lib/log.sh
 
 crash_nmi_switch()
 {
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare
-        kdump_restart
         report_system_info
-        install_rpm_package "OpenIPMI" "ipmitool"
+
+        install_rpm "OpenIPMI" "ipmitool"
         log_info "- Load IPMI modules"
         systemctl enable ipmi
         systemctl start ipmi || service ipmi start || log_error "- Failed to start ipmi service."
 
         echo 1 > /proc/sys/kernel/panic_on_unrecovered_nmi
         touch "${C_REBOOT}"
+        sync
         log_info "- Triggering crash."
-        sync;sync;sync
         ipmitool chassis power diag
 
         # Wait for a while
@@ -46,9 +45,10 @@ crash_nmi_switch()
     else
         rm -f "${C_REBOOT}"
         validate_vmcore_exists
+        ready_to_exit
     fi
-    ready_to_exit
 }
 
 log_info "- Start"
 crash_nmi_switch
+

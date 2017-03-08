@@ -18,9 +18,9 @@
 # Author: Qiao Zhao <qzhao@redhat.com>
 # Update: Ziqian SUN <zsun@redhat.com>
 
-
 . ../lib/kdump.sh
-. ../lib/log.sh
+. ../lib/kdump_report.sh
+. ../lib/crash.sh
 
 clean_up()
 {
@@ -31,12 +31,12 @@ clean_up()
             rm -rf "${path}"/*
         fi
     elif [ -d "${K_DEFAULT_PATH}" ]; then
-        log_info "- Removing vmcore files in default path ${K_DEFAULT_PATH}"
+        log_info "- Removing vmcore files in ${K_DEFAULT_PATH}"
         rm -rf "${K_DEFAULT_PATH}"/*
     fi
 
     if [ $? -eq 0 ]; then
-        log_info "- Vmcore files have been deleted successfully."
+        log_info "- Deleted vmcore files."
     else
         log_error "- Failed to delete vmcore files."
     fi
@@ -44,15 +44,13 @@ clean_up()
     log_info "- Restoring firewall status."
 
     log_info "- Restoring iptables/ip6tables rules."
-
-    for iport in $(ls ${K_IPTABLES_PREFIX}_tcp_*); do
+    for iport in $(ls ${K_PREFIX_IPT}_tcp_*); do
         iptables -D INPUT -p tcp --dport $(echo $iport| awk -F '_' '{print $3}')
         ip6tables -D INPUT -p tcp --dport $(echo $iport| awk -F '_' '{print $3}')
         service iptables save
         service ip6tables save
     done
-
-    for iport in $(ls ${K_IPTABLES_PREFIX}_udp_*); do
+    for iport in $(ls ${K_PREFIX_IPT}_udp_*); do
         iptables -D INPUT -p udp --dport $(echo $iport| awk -F '_' '{print $3}')
         ip6tables -D INPUT -p udp --dport $(echo $iport| awk -F '_' '{print $3}')
         service iptables save
@@ -60,44 +58,43 @@ clean_up()
     done
 
     log_info "- Restoring firewall-cmd rules."
-
-    for iport in $(ls ${K_FIREWALLD_PREFIX}_tcp_*); do
+    for iport in $(ls ${K_PREFIX_FWD}_tcp_*); do
         firewall-cmd --remove-port=$(echo $iport| awk -F '_' '{print $3}')/tcp --permanent
         firewall-cmd --remove-port=$(echo $iport| awk -F '_' '{print $3}')/tcp
     done
-
-    for iport in $(ls ${K_FIREWALLD_PREFIX}_udp_*); do
+    for iport in $(ls ${K_PREFIX_FWD}_udp_*); do
         firewall-cmd --remove-port=$(echo $iport| awk -F '_' '{print $3}')/udp --permanent
         firewall-cmd --remove-port=$(echo $iport| awk -F '_' '{print $3}')/udp
     done
-
-    for iservice in $(ls ${K_FIREWALLD_PREFIX}_service_*); do
+    for iservice in $(ls ${K_PREFIX_FWD}_service_*); do
         firewall-cmd --remove-service=$(echo $iservice| awk -F '_' '{print $3}') --permanent
         firewall-cmd --remove-service=$(echo $iservice| awk -F '_' '{print $3}')
     done
 
     # Restore sshd status
-    if [ -f ${K_SSHD_ENABLE} ]; then
+    if [ -f ${K_PREFIX_SSH} ]; then
         log_info "- Restoring sshd status."
         systemctl disable sshd || chkconfig sshd off
 
         if [ $? -eq 0 ]; then
-            log_info "- SSHD service has been turned off successfully."
+            log_info "- Disabled sshd service."
         else
-            log_error "- Failed to turn off sshd service."
+            log_error "- Failed to disable sshd service."
         fi
     fi
 
-    log_info "- Removing all temporary files."
+    log_info "- Removing temp files."
+
     rm -f "${K_PATH}" "${K_RAW}" "${K_REBOOT}"
-    rm -rf "${K_INFO_DIR}"
+    rm -rf "${K_INF_DIR}"
 
     log_info "- Restoring kdump.conf file."
-    cp -f "${K_BACKUP_DIR}"/kdump.conf /etc/kdump.conf
+    cp -f "${K_BAK_DIR}"/kdump.conf ${K_CONFIG}
 
-    log_info "- Clean up is done."
+    log_info "- Done cleaning up"
     ready_to_exit
 }
 
 log_info "- Start"
 clean_up
+
