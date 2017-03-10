@@ -33,7 +33,6 @@ crash_sysrq_c()
         validate_vmcore_exists
         ready_to_exit
     fi
-
 }
 
 log_info "- Start"

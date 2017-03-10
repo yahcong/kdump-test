@@ -1,5 +1,24 @@
 #!/usr/bin/env bash
 
+# Basic Library for Kdump Test
+
+# Copyright (c) 2016 Red Hat, Inc. All rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author: Qiao Zhao <qzhao@redhat.com>
+
 ((LIB_KDUMP_SH)) && return || LIB_KDUMP_SH=1
 . ../lib/log.sh
 
@@ -81,10 +100,10 @@ install_rpm()
 # @param2: repo
 install_rpm_from_repo()
 {
-    if [[ $# -gt 2 ]]; then
+    if [[ $# -ge 2 ]]; then
         local pkg=$1
         local repo=$2
-        rpm -q $pkg || yum install -y --enablerepo=$1 $2
+        rpm -q $pkg || yum install -y --enablerepo=$repo $pkg
         [[ $? -ne 0  ]] && log_error "- Install package $pkg from $repo failed!"
         log_info "- Installed $pkg from $repo successfully"
     fi
@@ -127,7 +146,12 @@ multihost_prepare()
 # @description: install required packakges for crash test
 crash_prepare()
 {
-    install_rpm kernel-debuginfo crash
+    if [[ "${K_DIST_NAME}" == "fc" ]]; then
+        install_rpm_from_repo kernel-debuginfo fedora-debuginfo
+        install_rpm crash
+    else
+        install_rpm kernel-debuginfo crash
+    fi
 }
 
 
@@ -152,7 +176,7 @@ kdump_prepare()
             sed -i 's/\(KDUMP_IMG\)=.*/\1=vmlinux/' /etc/sysconfig/kdump
         }
 
-        # In Fedora and upstream kernel, crashkernel=auto is not suppored.
+        # In Fedora/upstream kernel, crashkernel=auto is not suppored.
         # By checking if /sys/kernel/kexec_crash_size is zero, we can tell if
         # auto crashkernel is supported and if crash memory is allocated.
 
@@ -192,6 +216,10 @@ kdump_prepare()
 
     # install kexec-tools package
     install_rpm kexec-tools
+
+    # enable sysrq
+    sysctl -w kernel.sysrq="1"
+    sysctl -p
 
     # enable kdump service: systemd
     /bin/systemctl enable kdump.service || /sbin/chkconfig kdump on || log_error "- Failed to enable kdump!"
@@ -264,7 +292,6 @@ config_kdump_any()
     sed -i "/^${1%%[[:space:]]*}/d" ${K_CONFIG}
     log_info "- Adding new config '$1'."
     echo "$config" >> "${K_CONFIG}"
-
 }
 
 

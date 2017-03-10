@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 
 # Copyright (c) 2016 Red Hat, Inc. All rights reserved.

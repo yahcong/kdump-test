@@ -19,8 +19,6 @@
 # Update: Ziqian SUN <zsun@redhat.com>
 
 . ../lib/kdump.sh
-. ../lib/kdump_report.sh
-. ../lib/crash.sh
 
 clean_up()
 {

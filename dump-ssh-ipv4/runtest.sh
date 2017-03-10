@@ -15,14 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Song Qihan<qsong@redhat.com>
+# Author: Song Qihan <qsong@redhat.com>
 # Update: Qiao Zhao <qzhao@redhat.com>
 
-# Source necessary library
 . ../lib/kdump.sh
-. ../lib/kdump_report
+. ../lib/kdump_report.sh
 . ../lib/crash.sh
-. ../lib/log.sh
 
 # This is a muli-host tests has to be ran on both Server/Client.
 ssh_sysrq_test()

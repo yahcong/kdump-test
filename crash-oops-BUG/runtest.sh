@@ -34,7 +34,7 @@ crash_oops_BUG()
         touch "${C_REBOOT}"
         sync
         log_info "- Triggering crash."
-        # workaround for bug 810201
+
         echo 1 > /proc/sys/kernel/panic_on_opps
         sync
         echo 1 > /proc/crasher

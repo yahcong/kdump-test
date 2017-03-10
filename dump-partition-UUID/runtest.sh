@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Wenjie Cai<wcai@redhat.com>
+# Author: Wenjie Cai <wcai@redhat.com>
 
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
@@ -23,7 +23,6 @@
 
 dump_partition_UUID()
 {
-    # May need disable avc check
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 

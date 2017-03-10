@@ -2,5 +2,5 @@
 name=/kdump-test/lib
 own="Qiao Zhao"
 description="kdump-test lib"
-license="GPLv2"
+
 [restraint]

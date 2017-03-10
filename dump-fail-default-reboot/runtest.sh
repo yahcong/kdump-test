@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Wenjie Cai<wcai@redhat.com>
+# Author: Wenjie Cai <wcai@redhat.com>
 
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
@@ -23,11 +23,9 @@
 
 dump_fail_default_reboot()
 {
-    # May need disable avc check
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 
-        # makedumpfile options
         config_kdump_any "default reboot"
         config_kdump_filter "-nosuchoption"
         report_system_info
@@ -35,8 +33,6 @@ dump_fail_default_reboot()
         trigger_sysrq_crash
     else
         rm -f "${C_REBOOT}"
-
-        # add check vmcore test in here if need
         validate_vmcore_not_exists
     fi
     ready_to_exit
