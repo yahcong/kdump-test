@@ -66,6 +66,7 @@ report_lsinitrd()
 # @description: report system info inclufing hw/initrd/kdump.config
 report_system_info()
 {
+    log_info "- Reporting system info."
     report_hw_info
     report_lsinitrd
     report_file "${K_CONFIG}"

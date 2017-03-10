@@ -17,33 +17,31 @@
 #
 # Author: Yahuan Cong<ycong@redhat.com>
 
-# Source necessary library
 . ../lib/kdump.sh
+. ../lib/kdump_report.sh
 . ../lib/crash.sh
-. ../lib/log.sh
+
 dump_fail_default_rootfs()
 {
-    # May need disable avc check
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
-        
+
         MP="/ext4"
         OPTION=""
-        config_kdump_target
-        append_config "core_collector makedumpfile -l --nosuchoption"
-        append_config "default dump_to_rootfs"
-        kdump_restart
+        config_kdump_fs
+        config_kdump_any "default dump_to_rootfs"
+        config_kdump_filter "-nosuchoption"
         report_system_info
-         
+
         trigger_sysrq_crash
     else
         rm -f "${C_REBOOT}"
-
+        # Expect vmcore to be dumped to root not $MP
         echo "${K_DEFAULT_PATH}" > "${K_PATH}"
         validate_vmcore_exists "dmesg"
     fi
     ready_to_exit
-       
+
 }
 
 log_info "- Start"
