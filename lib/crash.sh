@@ -6,8 +6,8 @@
 . ../lib/kdump.sh
 
 
-# @usage: get_vmcore_path <vmcore_format> 
-# @description: 
+# @usage: get_vmcore_path <vmcore_format>
+# @description:
 #   get the full path to the vmcore
 #   it searches vmcore/vmcroe.flat/vmcore-dmesg based on the <vmcore_format>
 # @param1: vmcore_format # "vmcore" "flat" "dmesg". default to "dmesg"
@@ -39,8 +39,8 @@ get_vmcore_path()
 }
 
 
-# @usage: validate_vmcore_exists <vmcore_format> 
-# @description: 
+# @usage: validate_vmcore_exists <vmcore_format>
+# @description:
 #   check whether the vmcore exists
 #   it checks vmcore/vmcroe.flat/vmcore-dmesg based on the <vmcore_format>
 # @param1: vmcore_format # "vmcore" "flat" "dmesg". default to "dmesg"
@@ -59,8 +59,8 @@ validate_vmcore_exists()
     fi
 }
 
-# @usage: validate_vmcore_not_exists <vmcore_format> 
-# @description: 
+# @usage: validate_vmcore_not_exists <vmcore_format>
+# @description:
 #   check whether the vmcore doesn't exists
 #   it checks vmcore/vmcroe.flat/vmcore-dmesg based on the <vmcore_format>
 # @param1: vmcore_format # "vmcore" "flat" "dmesg". default to "dmesg"
@@ -159,9 +159,9 @@ rd -d jiffies
 set -c 0
 EOF
 
-    # Bug 1204584, In order for the "irq -u" option to work, the architecture
+    # In order for the "irq -u" option to work, the architecture
     # must have either the "no_irq_chip" or the "nr_irq_type" symbols to exist.
-    # The s390x has none of them:
+    # But s390x has none of them:
     if [ "$(uname -m)" != "s390x" ]; then
         cat <<EOF >>"${TESTAREA}/crash.cmd"
 irq

@@ -131,11 +131,11 @@ ready_to_exit()
 # @description: reboot system
 reboot_system()
 {
-    /bin/sync
+    sync
 
     if is_beaker_env; then
-        /usr/bin/rhts-reboot
+        rhts-reboot
     else
-        /sbin/reboot
+        reboot
     fi
 }
