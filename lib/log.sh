@@ -21,7 +21,10 @@
 
 ((LIB_LOG_SH)) && return || LIB_LOG_SH=1
 readonly K_LOG_FILE="./result.log"
+readonly K_TEST_SUMMARY="../test_summary.log"
 
+K_TEST_PATH=$(pwd)
+K_TEST_NAME=$(basename "${K_TEST_PATH}")
 
 # @usage: is_beaker_env
 # @description: check it is a beaker environment
@@ -113,16 +116,20 @@ ready_to_exit()
 
     if is_beaker_env; then
         if [[ $1 == "1" ]]; then
+            echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
             report_result "${TEST}" "FAIL" "1"
             rhts-abort -t recipeset
         else
+            echo -e "${K_TEST_NAME}\t\t\tPass" >> "${K_TEST_SUMMARY}"
             report_result "${TEST}" "PASS" "0"
         fi
     else
         [[ $1 == "1" ]] && {
+        echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
             log_info "- [FAIL] Please check test logs!"
             exit 1
-        }
+        } 
+        echo -e "${K_TEST_NAME}\t\t\tPass" >> "${K_TEST_SUMMARY}"
         log_info "- [PASS] Tests finished successfully!"
         exit 0
     fi
