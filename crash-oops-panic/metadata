@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/crash-oops-panic
+owner="Qiao Zhao"
+description="kdump-test for crash-oops-panic"
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true

@@ -56,15 +56,40 @@ static ssize_t crasher_write(struct file *file, const char __user *buffer,
 			size_t count, loff_t *data)
 #endif
 {
-    char value;
+	char value, *a;
+	spinlock_t mylock;
+	spin_lock_init(&mylock);
+
 	/* grab the first byte the user gave us, ignore the rest */
 	if(copy_from_user(&value,buffer, 1))
 		return -EFAULT;
 
-    BUG();
+	switch ( value )
+	{
+		case '0': /* panic() the system */
+			panic("KDUMP test panic\n");
+			break;
+
+		case '1': /* BUG() test */
+			BUG();
+			break;
+
+		case '2': /* panic_on_oops test */
+			a=0;
+			a[1]='A';
+			break;
+
+		case '3': /* hang w/double spinlock */
+			spin_lock_irq(&mylock);
+			spin_lock_irq(&mylock);
+			break;
+
+		default:
+			printk("crasher: Bad command\n");
+	}
 
 	return count; /* tell the user we read all his data,
-			 somtimes white lies are ok */
+			 sometimes white lies are ok */
 }
 
 /* create a directory in /proc and a debug file in the new directory */

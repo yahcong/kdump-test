@@ -15,21 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Song Qihan <qsong@redhat.com>
-# Update: Qiao Zhao <qzhao@redhat.com>
+# Author: Xiaowu Wu <xiawu@redhat.com>
 
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
 
-crash_oops_BUG()
+crash_hard_lockup()
 {
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare
         report_system_info
 
+        # enable kernel.nmi_watchdog
+        sysctl -w kernel.nmi_watchdog="1"
+
         make_install_module "crasher" .
-        trigger_crasher 1 # BUG()
+        trigger_crasher 3 # spin_lock_irq()
     else
         rm -f "${C_REBOOT}"
         validate_vmcore_exists
@@ -38,5 +40,5 @@ crash_oops_BUG()
 }
 
 log_info "- Start"
-crash_oops_BUG
+crash_hard_lockup
 

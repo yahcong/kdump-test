@@ -36,8 +36,7 @@ crash-oops-warn()
         touch "${C_REBOOT}"
         sync
         log_info "- Triggering crash."
-        make_module "crash-warn"
-        insmod crash-warn/crash-warn.ko || log_error "- Failed to insmod module."
+        make_install_module "crash-warn" .
 
         # Wait for a while
         sleep 60

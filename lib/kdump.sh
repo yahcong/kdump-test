@@ -110,25 +110,44 @@ install_rpm_from_repo()
 }
 
 
-# @usage: make_module <module_name>
-# @description: Make a module
+# @usage: make_module <name> <from> <to>
+# @description: make a module
 # @param1: name  # name of the module
+# @param2: from  # path where "${name}".c and Makefile."${name}" are stored
+# @param3: dest  # path to dir where .ko will be generated to. defaul to <name>
 make_module()
 {
+    [ $# -lt 2 ] && log_error "- No module name or from path"
     local name=$1
+    local from=$2
+    local dest=${3:-$name}
 
-    if [[ -z "${name}" ]];then
-        log_error "- No module name is provided."
-    fi
-
-    mkdir "${name}"
-    cp "${name}".c "${name}/"
-    cp Makefile."${name}" "${name}/Makefile"
+    mkdir "${dest}"
+    cp "${from}"/"${name}".c "${dest}/"
+    cp "${from}"/Makefile."${name}" "${dest}/Makefile"
 
     unset ARCH
     make -C "${name}/" || log_error "- Can not make module."
     export ARCH
     ARCH=$(uname -m)
+}
+
+
+# @usage: make_install_module <name> <from> <to>
+# @description: make and install a module
+# @param1: name  # name of the module
+# @param2: from  # path where "${name}".c and Makefile."${name}" are stored
+# @param3: dest  # path to dir where .ko will be generated to. defaul to <name>
+make_install_module()
+{
+    [ $# -lt 2 ] && log_error "- No module name or from path"
+    local name=$1
+    local from=$2
+    local dest=${3:-$name}
+
+    make_module "${name}" "${from}" "${dest}"
+
+    insmod "${dest}/${name}.ko" || log_error "- Failed to insmod module."
 }
 
 
@@ -431,6 +450,33 @@ trigger_sysrq_crash()
     sync;sync;sync
     log_info "- Triggering crash."
     echo c > /proc/sysrq-trigger
+
+    sleep 60
+    log_error "- Failed to trigger crash after waiting for 60s."
+}
+
+
+# @usage: trigger_crasher <opt>
+# @description:
+#       trigger system crash in crasher module
+#       /proc/crasher has to be set up before calling this method
+# @parma1: opt
+trigger_crasher()
+{
+    [ $# -lt 1 ] && log_error "- Missing opt to trigger crasher"
+
+    local opt=$1
+    touch "${C_REBOOT}"
+    # enable panic_on_oops
+    echo 1 > /proc/sys/kernel/panic_on_oops
+    sync;sync;sync
+
+    log_info "- Triggering crash."
+    # opt=0 : panic()
+    # opt=1 : BUG()
+    # opt=2 : a=0;a[1]='A'
+    # opt=3 : spin_lock_irq()
+    echo $opt > /proc/crasher
 
     sleep 60
     log_error "- Failed to trigger crash after waiting for 60s."

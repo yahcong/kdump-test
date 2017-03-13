@@ -1,4 +1,4 @@
-obj-m := oops_BUG.o
+obj-m := crasher.o
 KDIR := /lib/modules/$(shell uname -r)/build
 PWD := $(shell pwd)
 
