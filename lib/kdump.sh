@@ -49,6 +49,7 @@ K_BAK_DIR="${K_TMP_DIR}/bk"
 
 K_REBOOT="${K_TMP_DIR}/K_REBOOT"
 C_REBOOT="./C_REBOOT"
+D_REBOOT="${K_TMP_DIR}/D_REBOOT"
 
 # KDUMP-PATH stores the full path to vmcore files.
 # e.g. cat KDUMP-PATH: ${MP%/}${KPATH}
@@ -101,14 +102,19 @@ install_rpm()
 # @description: install rpm package from the repo
 # @param1: pkg
 # @param2: repo
+# @param3: opt  # install or upgrade. default to install
 install_rpm_from_repo()
 {
+    local cmd=yum
+    [ $(dnf --version) ] && cmd=dnf
+
     if [[ $# -ge 2 ]]; then
         local pkg=$1
         local repo=$2
-        rpm -q $pkg || yum install -y --enablerepo=$repo $pkg
-        [[ $? -ne 0  ]] && log_error "- Install package $pkg from $repo failed!"
-        log_info "- Installed $pkg from $repo successfully"
+        local opt=${3:-"install"}
+        $cmd ${opt} -y --enablerepo=$repo $pkg
+        [[ $? -ne 0  ]] && log_error "- Install/upgrade package $pkg from $repo failed!"
+        log_info "- Installed/upgraded $pkg from $repo successfully"
     fi
 }
 
@@ -168,9 +174,22 @@ multihost_prepare()
 # @description: install required packakges for crash test
 crash_prepare()
 {
+    [ -f ${D_REBOOT} ] && return
+
     if [[ "${K_DIST_NAME}" == "fc" ]]; then
-        install_rpm_from_repo kernel-debuginfo fedora-debuginfo
+        before=$(dnf list installed kernel | wc -l)
+
+        install_rpm_from_repo kernel updates-debuginfo upgrade
+        install_rpm_from_repo kernel-debuginfo updates-debuginfo
         install_rpm crash
+
+        after=$(dnf list installed kernel | wc -l)
+
+        [[ "$after" > "$before" ]] && {
+            touch ${D_REBOOT}
+            sync
+            reboot_system
+        }
     else
         install_rpm kernel-debuginfo crash
     fi
@@ -182,7 +201,16 @@ crash_prepare()
 kdump_prepare()
 {
     if [ ! -f "${K_REBOOT}" ]; then
+        # install crash/kernel-debuginfo
+        # upgrade kernel if needed.
+        crash_prepare
+
+        # install kexec-tools package
+        install_rpm kexec-tools
+
+        # backup config files
         backup_files
+
         local default=/boot/vmlinuz-$(uname -r)
         [ ! -s "$default" ] && default=/boot/vmlinux-$(uname -r)
 
@@ -194,8 +222,8 @@ kdump_prepare()
 
         # for uncompressed kernel, i.e. vmlinux
         [[ "${default}" == *vmlinux* ]] && {
-            log_info "- Modifying /etc/sysconfig/kdump properly for 'vmlinux'."
-            sed -i 's/\(KDUMP_IMG\)=.*/\1=vmlinux/' /etc/sysconfig/kdump
+            log_info "- Modifying ${K_SYS_CONFIG} properly for 'vmlinux'."
+            sed -i 's/\(KDUMP_IMG\)=.*/\1=vmlinux/' ${K_SYS_CONFIG}
         }
 
         # In Fedora/upstream kernel, crashkernel=auto is not suppored.
@@ -235,9 +263,6 @@ kdump_prepare()
         log_info "- Kernel Boot Cmdline is: $(cat /proc/cmdline)"
         log_error "- No memory is reserved for crashkernel!"
     fi
-
-    # install kexec-tools package
-    install_rpm kexec-tools
 
     # enable sysrq
     sysctl -w kernel.sysrq="1"

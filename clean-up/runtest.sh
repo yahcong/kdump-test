@@ -82,7 +82,7 @@ clean_up()
     fi
 
     log_info "- Removing temp files."
-    rm -f "${K_PATH}" "${K_RAW}" "${K_REBOOT}"
+    rm -rf "${K_TMP_DIR}"
     rm -rf "${K_INF_DIR}"
 
     log_info "- Restoring kdump conf files."
