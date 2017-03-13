@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/dump-nr_cpus-2
+owner="Qiao Zhao"
+description="kdump-test for dump-nr_cpus-2"
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true

@@ -29,6 +29,7 @@ K_DIST_VER="$(rpm -E %{?dist} | sed 's/[^0-9]//g')"
 K_CONFIG="/etc/kdump.conf"
 K_DEFAULT_PATH="/var/crash"
 K_SSH_CONFIG="${HOME}/.ssh/config"
+K_SYS_CONFIG="/etc/sysconfig/kdump"
 
 # Test Parameters:
 KDEBUG=${KDEBUG:-"no"}
@@ -64,6 +65,7 @@ K_PREFIX_SSH="${K_INF_DIR}/SSHD_ENABLE"
 readonly K_LOCK_AREA="/root"
 readonly K_LOCK_SSH_ID_RSA="${K_LOCK_AREA}/.ssh/id_rsa_kdump_test"
 readonly K_RETRY_COUNT=1000
+readonly K_CPU_THRESHOLD=8
 
 [[ "${KDEBUG}" == "yes" ]] && set -x
 
@@ -77,6 +79,7 @@ readonly K_RETRY_COUNT=1000
 backup_files()
 {
     cp "${K_CONFIG}" "${K_BAK_DIR}"/
+    cp "${K_SYS_CONFIG}" "${K_BAK_DIR}"/
 }
 
 
@@ -437,6 +440,48 @@ config_kdump_filter()
 
     config_kdump_any "core_collector makedumpfile ${opt}"
     kdump_restart
+}
+
+# @usage: config_kdump_sysconfig <opt>
+# @description:
+#    add/remove/edit configs in kdump sysconfig
+# @param1: key # e.g.  KDUMP_KERNELVER
+# @param2: action # remove/add/replace/
+# @param3: value1
+# @param4: value2  # only required for replacing
+# @example:
+#   config_kdump_sysconfig KDUMP_COMMANDLINE_APPEND replace nr_cpus=1 nr_cpus=4
+config_kdump_sysconfig()
+{
+    log_info "- Updating kdump sysconfig."
+
+    [ $# -lt 3 ] && log_error "- Expect at least 3 args."
+    local key=$1
+    local action=$2
+    local value1=$3
+    local value2=$4
+
+    log_info "- Edit: ${action};${key};${value1};${value2}"
+    case $action in
+        add)
+            # Note "add" will not add spaces between values automatically,
+            # because it doesn't know if this is the first value or not in the setting.
+            # So pls add space explicitly in your call if needed:
+            #       config_kdump_sysconfig KEXEC_ARGS add " value2"
+            sed -i  /^"$key"/s/\"/"$value1"\"/2 "${K_SYS_CONFIG}"
+            ;;
+        remove)
+            sed -i  /^"$key"/s/"$value1"//g "${K_SYS_CONFIG}"
+            ;;
+        replace)
+            [ -z "$value2" ] && log_error "- Missing new_value for replacing."
+            sed -i  /^"$key"/s/"$value1"/"$value2"/g "${K_SYS_CONFIG}"
+            ;;
+        *)
+            log_error "- Invalid action '${action}' for editing kdump sysconfig."
+            ;;
+    esac
+    [ $? -ne 0 ] && log_error "- Failed to updated kdump sysconfig."
 }
 
 

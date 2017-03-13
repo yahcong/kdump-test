@@ -69,4 +69,5 @@ report_system_info()
     report_hw_info
     report_lsinitrd
     report_file "${K_CONFIG}"
+    report_file "${K_SYS_CONFIG}"
 }
