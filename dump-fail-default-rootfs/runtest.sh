@@ -26,7 +26,7 @@ dump_fail_default_rootfs()
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 
-        MP="/ext4"
+        MP=${TESTARGS:-"/ext4"}
         OPTION=""
         config_kdump_fs
         config_kdump_any "default dump_to_rootfs"

@@ -33,7 +33,7 @@ K_SYS_CONFIG="/etc/sysconfig/kdump"
 
 # Test Parameters:
 KDEBUG=${KDEBUG:-"no"}
-
+TESTARGS=${TESTARGS:-}
 KPATH=${KPATH:-${K_DEFAULT_PATH}}
 OPTION=${OPTION:-}
 MP=${MP:-/}
@@ -295,12 +295,11 @@ kdump_restart()
 
 ###  Configuring KDUMP.CONF ###
 
-# @usage: config_kdump_any <config>
+# @usage: append_config <config>
 # @description:
 #   append config to kdump.config
-#   kdump service is NOT restarted after configuring
 # @param1: config
-config_kdump_any()
+append_config()
 {
     log_info "- Modifying ${K_CONFIG}"
     local config="$1"
@@ -314,6 +313,21 @@ config_kdump_any()
     sed -i "/^${1%%[[:space:]]*}/d" ${K_CONFIG}
     log_info "- Adding new config '$1'."
     echo "$config" >> "${K_CONFIG}"
+}
+
+
+# @usage: config_kdump_any <config>
+# @description:
+#   add a kdump config line to kdump.config
+#   restart kdump service after configuring
+# @param1: config
+# @example:
+#   config_kdump_any "kdump_post /bin/your_script"
+config_kdump_any()
+{
+    [ $# -eq 0 ] && log_error "- Expect a config line"
+    append_config "$1"
+    kdump_restart
 }
 
 
@@ -404,12 +418,12 @@ config_kdump_fs()
     esac
 
     if [ "yes" == "$RAW" -a -n "$target" ]; then
-        config_kdump_any "raw $target"
+        append_config "raw $target"
         sed -i "/[ \t]\\$MP[ \t]/d" /etc/fstab
         echo "$dev $fstype" > "${K_RAW}"
     elif [ -n "$fstype" -a -n "$target" ]; then
-        config_kdump_any "$fstype $target"
-        config_kdump_any "path $KPATH"
+        append_config "$fstype $target"
+        append_config "path $KPATH"
         mkdir -p "$MP/$KPATH"
         # tell crash analyse procedure where to find vmcore
         echo "${MP%/}${KPATH}" > "${K_PATH}"
@@ -438,7 +452,7 @@ config_kdump_filter()
         opt="-c -d 31"
     fi
 
-    config_kdump_any "core_collector makedumpfile ${opt}"
+    append_config "core_collector makedumpfile ${opt}"
     kdump_restart
 }
 

@@ -26,7 +26,7 @@ dump_partition_DevName()
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 
-        MP=/ext4
+        MP=${TESTARGS:-"/ext4"} 
         KPATH=/vmcore
         OPTION=""
         config_kdump_fs

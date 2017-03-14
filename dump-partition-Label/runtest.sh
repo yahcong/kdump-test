@@ -28,7 +28,7 @@ dump_partition_Label()
         kdump_restart
 
         KPATH=/vmcore
-        MP=/ext4
+        MP=${TESTARGS:-"/ext4"}
         OPTION="label"
         LABEL="label-vmcore"
         config_kdump_fs

@@ -27,7 +27,7 @@ dump_partition_UUID()
         kdump_prepare
 
         KPATH=/vmcore
-        MP=/ext4
+        MP=${TESTARGS:-"/ext4"}
         OPTION="uuid"
         config_kdump_fs
         report_system_info
