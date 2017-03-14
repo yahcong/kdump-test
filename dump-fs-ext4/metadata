@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/dump-fs-ext4
+owner="Qiao Zhao"
+description="kdump-test for dump_fs_ext4"
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true

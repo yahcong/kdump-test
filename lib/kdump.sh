@@ -331,7 +331,7 @@ config_kdump_any()
 }
 
 
-# @usage: LabelFS <fstype> <dev> <mntpnt> <label>
+# @usage: label_fs <fstype> <dev> <mntpnt> <label>
 # @description: add label to specified fs
 # @param1: fstype
 # @param2: device
@@ -367,19 +367,21 @@ label_fs()
 }
 
 
-# @usage: config_kdump_fs
+# @usage: config_kdump_fs <required_fstype>
 # @description:
 #    configure local dump target in kdump.conf
 #    restart kdump service after configuring
-# @param1: MP      # mount point of dump device. default to '/'
-# @param2: KPATH   # specify 'path' in kdump.conf. default to '/var/crash'.
-# @param3: OPTION  # 'uuid', 'label' or 'softlink'
-# @param4: LABEL   # Only applicable when OPTION=label. Specifying a label to the particular fs
-# @param5: RAW     # 'yes' means raw dump, default to 'no'
+# @param1: required_fstype  # check if fs at MP is <required_fstype>. optional.
+# @param2: MP      # mount point of dump device. default to '/'
+# @param3: KPATH   # specify 'path' in kdump.conf. default to '/var/crash'.
+# @param4: OPTION  # 'uuid', 'label' or 'softlink'
+# @param5: LABEL   # Only applicable when OPTION=label. Specifying a label to the particular fs
+# @param6: RAW     # 'yes' means raw dump, default to 'no'
 config_kdump_fs()
 {
 
     log_info "- Editing kdump configuration"
+    local required_fstype="$1"
     local dev=""
     local fstype=""
     local target=""
@@ -393,6 +395,10 @@ config_kdump_fs()
     else
         dev=$(findmnt -kcno SOURCE "$MP")
         fstype=$(findmnt -kcno FSTYPE "$MP")
+    fi
+
+    if [[ -n "$required_fstype" &&  "$required_fstype" != "$fstype" ]]; then
+        log_error "- Expect ${MP} to be fs_type ${required_fstype}, but it's ${fstype}"
     fi
 
     # get target
