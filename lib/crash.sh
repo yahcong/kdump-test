@@ -193,6 +193,7 @@ EOF
     [ ! -f "${vmlinux}" ] && log_error "- Vmlinux is not found."
 
     local vmcore=$(get_vmcore_path)
+    [ -z "${vmcore}" ] && log_error "- No vmcore is found for analyzing."
     crash_command "" "${vmlinux}" "${vmcore}"
 }
 
