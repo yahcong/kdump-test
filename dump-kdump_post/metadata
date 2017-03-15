@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/dump-kdump_post
+owner="Qiao Zhao"
+description="kdump-test for dump-kdump_post"
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true

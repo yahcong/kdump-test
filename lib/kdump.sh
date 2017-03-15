@@ -30,6 +30,7 @@ K_CONFIG="/etc/kdump.conf"
 K_DEFAULT_PATH="/var/crash"
 K_SSH_CONFIG="${HOME}/.ssh/config"
 K_SYS_CONFIG="/etc/sysconfig/kdump"
+K_SCRIPT="../lib/gen-helper-script"
 
 # Test Parameters:
 KDEBUG=${KDEBUG:-"no"}
@@ -41,8 +42,7 @@ LABEL=${LABEL:-label-kdump}
 RAW=${RAW:-no}
 TESTAREA=${TESTAREA:-"/mnt/testarea"}
 
-
-# Test dir
+# Test dirs:
 K_TMP_DIR="${TESTAREA}/tmp"
 K_INF_DIR="${TESTAREA}/info"
 K_BAK_DIR="${K_TMP_DIR}/bk"
@@ -338,6 +338,7 @@ append_config()
     sed -i "/^${1%%[[:space:]]*}/d" ${K_CONFIG}
     log_info "- Adding new config '$1'."
     echo "$config" >> "${K_CONFIG}"
+    sync;sync;sync
 }
 
 

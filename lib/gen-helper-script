@@ -1,0 +1,59 @@
+#!/bin/sh
+
+if [[ "$K_DIST_NAME$K_DIST_VER" =~ [a-zA-Z]+5 ]]; then
+    shbang="msh"
+else
+    shbang="sh"
+fi
+
+root=$(mount | awk '{ if ($3 == "/") print $1; }')
+pre="kdump-pre"
+post="kdump-post"
+
+cat > "/bin/${pre}.sh" <<EOF
+#!/bin/$shbang
+
+echo "${pre}.sh: touching /root/${pre}.log"
+
+dir=\$(grep -m1 $root /proc/mounts | cut -d' ' -f2)
+tdir=/mnt/tmp
+mkdir -p \$tdir
+
+if [ -z \$dir ]; then
+    mount $root \$tdir
+else
+    mount --rbind \$dir \$tdir
+    mount -o remount,rw \$tdir
+fi
+echo "${pre}.sh: kdump pre script." >\$tdir/root/${pre}.log
+sync
+umount \$tdir
+sleep 5
+EOF
+
+cat > "/bin/${post}.sh" <<EOF
+#!/bin/$shbang
+
+dump_result=\$1
+echo "${post}.sh: dump result \$dump_result"
+echo "${post}.sh: touching /root/$post.log"
+
+dir=\$(grep -m1 $root /proc/mounts | cut -d' ' -f2)
+tdir=/mnt/tmp
+mkdir -p \$tdir
+if [ -z \$dir ]; then
+    mount $root \$tdir
+else
+    mount --rbind \$dir \$tdir
+    mount -o remount,rw \$tdir
+fi
+
+echo "${post}.sh: dump result \$dump_result" > \$tdir/root/${post}.log
+sync
+umount \$tdir
+sleep 5
+EOF
+
+
+chmod +x /bin/kdump-{pre,post}.sh
+
