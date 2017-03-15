@@ -25,7 +25,6 @@ dump_partition_Label()
 {
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
-        kdump_restart
 
         KPATH=/vmcore
         MP=${TESTARGS:-"/ext4"}

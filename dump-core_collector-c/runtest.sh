@@ -26,8 +26,7 @@ dump_core_collector_c()
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 
-        opt="-c -d 31"
-        config_kdump_fitler "${opt}"
+        config_kdump_filter "-c -d 31"
         report_system_info
 
         trigger_sysrq_crash
