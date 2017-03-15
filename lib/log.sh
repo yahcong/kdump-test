@@ -23,8 +23,7 @@
 readonly K_LOG_FILE="./result.log"
 readonly K_TEST_SUMMARY="../test_summary.log"
 
-K_TEST_PATH=$(pwd)
-K_TEST_NAME=$(basename "${K_TEST_PATH}")
+K_TEST_NAME=$(basename "$(pwd)")
 
 # @usage: is_beaker_env
 # @description: check it is a beaker environment
@@ -128,7 +127,7 @@ ready_to_exit()
         echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
             log_info "- [FAIL] Please check test logs!"
             exit 1
-        } 
+        }
         echo -e "${K_TEST_NAME}\t\t\tPass" >> "${K_TEST_SUMMARY}"
         log_info "- [PASS] Tests finished successfully!"
         exit 0

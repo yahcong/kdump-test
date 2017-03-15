@@ -64,7 +64,7 @@ K_PREFIX_IPT="${K_INF_DIR}/IPTABLES"
 K_PREFIX_SSH="${K_INF_DIR}/SSHD_ENABLE"
 
 readonly K_LOCK_AREA="/root"
-readonly K_LOCK_SSH_ID_RSA="${K_LOCK_AREA}/.ssh/id_rsa_kdump_test"
+readonly K_LOCK_SSH_ID_RSA="${K_LOCK_AREA}/.ssh/id_rsa_kdump"
 readonly K_RETRY_COUNT=1000
 readonly K_CPU_THRESHOLD=8
 
@@ -335,7 +335,7 @@ append_config()
     fi
 
     log_info "- Removing existing ${1%%[[:space:]]*} settings."
-    sed -i "/^${1%%[[:space:]]*}/d" ${K_CONFIG}
+    sed -i "/^${1%%[[:space:]]*} /d" ${K_CONFIG}
     log_info "- Adding new config '$1'."
     echo "$config" >> "${K_CONFIG}"
     sync;sync;sync

@@ -15,8 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Song Qihan <qsong@redhat.com>
-# Update: Qiao Zhao <qzhao@redhat.com>
+# Author: Xiaowu Wu <xiawu@redhat.com>
 
 . ../lib/kdump.sh
 . ../lib/kdump_multi.sh
@@ -24,7 +23,7 @@
 . ../lib/crash.sh
 
 # This is a muli-host tests has to be ran on both Server/Client.
-ssh_sysrq_test()
+ssh_v6_sysrq_test()
 {
     if [ -z "${SERVERS}" -o -z "${CLIENTS}" ]; then
         log_error "No Server or Client hostname"
@@ -36,7 +35,7 @@ ssh_sysrq_test()
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare
         multihost_prepare
-        config_ssh
+        config_ssh v6
 
         if [[ $(get_role) == "client" ]]; then
             kdump_restart
@@ -65,4 +64,4 @@ ssh_sysrq_test()
 }
 
 log_info "- Start"
-ssh_sysrq_test
+ssh_v6_sysrq_test

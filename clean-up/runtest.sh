@@ -81,13 +81,13 @@ clean_up()
         fi
     fi
 
-    log_info "- Removing temp files."
-    rm -rf "${K_TMP_DIR}"
-    rm -rf "${K_INF_DIR}"
-
     log_info "- Restoring kdump conf files."
     cp -f "${K_BAK_DIR}"/kdump.conf ${K_CONFIG}
     cp -f "${K_BAK_DIR}"/kdump ${K_SYS_CONFIG}
+
+    log_info "- Removing temp files."
+    rm -rf "${K_TMP_DIR}"
+    rm -rf "${K_INF_DIR}"
 
     log_info "- Done cleaning up"
     ready_to_exit

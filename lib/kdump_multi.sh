@@ -33,9 +33,9 @@ get_role()
         echo "client"; return
     fi
 
-    if [[ ipcalc -c "${SERVERS}" ]] && [[ is_host_ip "${SERVERS}" ]]; then
+    if ipcalc -c "${SERVERS}" && is_host_ip "${SERVERS}"; then
         echo "server"; return
-    elif [[ ipcalc -c "${CLIENTS}" ]] && [[ is_host_ip "${CLIENTS}" ]]; then
+    elif ipcalc -c "${CLIENTS}" && is_host_ip "${CLIENTS}"; then
         echo "client"; return
     fi
 
@@ -73,8 +73,8 @@ open_firewall_service()
             firewall-cmd --list-service | grep "${fw_service}"
             if [ $? -ne 0 ]; then
                 touch "${K_PREFIX_FWD}_service_${fw_service}"
-                firewall-cmd --add-service=${fw_service}
-                firewall-cmd --add-service=${fw_service} --permanent
+                firewall-cmd --add-service="${fw_service}"
+                firewall-cmd --add-service="${fw_service}" --permanent
             fi
     else
         log_info "- Skipped. The iptables service is not running."
@@ -105,17 +105,17 @@ open_firewall_port()
             firewall-cmd --list-ports | grep "${fw_port}/${fw_protocol}"
             if [ $? -eq 0 ]; then
                 touch "${K_PREFIX_FWD}_${fw_protocol}_${fw_port}"
-                firewall-cmd --add-port=${fw_port}/${fw_protocol}
-                firewall-cmd --add-port=${fw_port}/${fw_protocol} --permanent
+                firewall-cmd --add-port="${fw_port}/${fw_protocol}"
+                firewall-cmd --add-port="${fw_port}/${fw_protocol}" --permanent
             fi
             ;;
         iptables)
             iptables-save | grep -i "${fw_protocol}" | grep "${fw_port}"
             if [ $? -ne 0 ]; then
                 touch "${K_PREFIX_IPT}_${fw_protocol}_${fw_port}"
-                iptables -I INPUT -p ${fw_protocol} --dport ${fw_port} -j ACCEPT
+                iptables -I INPUT -p "${fw_protocol}" --dport "${fw_port}" -j ACCEPT
                 service iptables save
-                ip6tables -I INPUT -p ${fw_protocol} --dport ${fw_port} -j ACCEPT
+                ip6tables -I INPUT -p "${fw_protocol}" --dport "${fw_port}" -j ACCEPT
                 service ip6tables save
             fi
             ;;
@@ -133,10 +133,10 @@ open_firewall_port()
 # @param1: port
 wait_for_signal()
 {
-    open_firewall_port tcp $1
-    nc -l $1
+    open_firewall_port tcp "$1"
+    nc -l "$1"
     if [ $? -ne 0 ]; then
-        log_error "- Got error listening for signal at port $1"d
+        log_error "- Got error listening for signal at port $1"
     else
         log_info "- Received signal at port $1"
     fi
@@ -158,7 +158,7 @@ send_notify_signal()
     local result=1
 
     # try dump message to /dev/tcp/${server}/${port}
-    while [ $count -gt 0 ]; do
+    while [ "$count" -gt 0 ]; do
         echo "Success" > "/dev/tcp/${server}/${port}"
         if [ $? -eq 0 ]; then
             result=0
@@ -194,7 +194,7 @@ config_ssh()
     # Path where server will save its ipv6 addr to and where client will fetch
     local path_ipv6_addr="/root/server-ipv6-address"
 
-    ip_version=${1:-"v4"}
+    local ip_version=${1:-"v4"}
     if [ "${ip_version}" != "v4" -a "${ip_version}" != "v6" ]; then
         log_error "- ${ip_version} is not supported. Onlyl ipv4 or ipv6 is supported."
     fi
@@ -211,8 +211,8 @@ config_ssh()
         log_info "- Preparing ssh authentication at client"
 
         mkdir -p "${K_LOCK_AREA}/.ssh"
-        cp ../lib/id_rsa ${K_LOCK_SSH_ID_RSA}
-        chmod 0600 ${K_LOCK_SSH_ID_RSA}
+        cp ../lib/id_rsa "${K_LOCK_SSH_ID_RSA}"
+        chmod 0600 "${K_LOCK_SSH_ID_RSA}"
         cp ../lib/id_rsa.pub "${K_LOCK_SSH_ID_RSA}.pub"
         chmod 0600 "${K_LOCK_SSH_ID_RSA}.pub"
 
@@ -226,7 +226,7 @@ config_ssh()
 
         # Test ssh connection
         log_info "- Test ssh connection between c/s."
-        ssh -o StrictHostKeyChecking=no -i ${K_LOCK_SSH_ID_RSA} "${server}" 'touch ${K_LOCK_AREA}/ssh_test'
+        ssh -o StrictHostKeyChecking=no -i "${K_LOCK_SSH_ID_RSA}" "${server}" "touch ${K_LOCK_AREA}/ssh_test"
 
         if [ $? -ne 0 ]; then
             log_info "- Notifying server that configuration is done at client"
@@ -236,18 +236,19 @@ config_ssh()
         log_info "- SSH connection test passed."
 
         # update kdump config file for dumping via ssh
+        append_config "sshkey ${K_LOCK_SSH_ID_RSA}"
         if [[ ${ip_version} == "v6" ]]; then
             # get server ipv6 address
-            ssh -i ${K_LOCK_SSH_ID_RSA} "${server}" "cat ${path_ipv6_addr}" > ${path_ipv6_addr}.out
+            ssh -i "${K_LOCK_SSH_ID_RSA}" "${server}" "cat ${path_ipv6_addr}" > ${path_ipv6_addr}.out
             [ $? -eq 0 ] || log_error "- Failed to get server ipv6 address."
             server_ipv6=$(grep -P '^[0-9]+' ${path_ipv6_addr}.out | head -1)
-            config_kdump_any "ssh root@${server_ipv6}"
+            append_config "ssh root@${server_ipv6}"
         else
-            config_kdump_any "ssh root@${server}"
+            append_config "ssh root@${server}"
         fi
+        config_kdump_filter  # add -F for SSH
         config_kdump_any "path ${K_DEFAULT_PATH}"
-        config_kdump_any "sshkey ${K_LOCK_SSH_ID_RSA}"
-        config_kdump_filter
+
 
         if [[ "${K_DIST_VER}" == "6" ]]; then
             # Only required for RHEL6.
@@ -277,11 +278,12 @@ config_ssh()
         # save server ipv6 address to ${path_ipv6_addr}
         if [ "${ip_version}" == "v6" ]; then
             ifconfig | grep inet6\ | grep global | awk -F' ' '{print $2}' > ${path_ipv6_addr}
-            if [ $? -eq 0 ]; then
+            if [ $? -ne 0 ]; then
                 log_info "- Sending signal to client that server is done with error."
                 send_notify_signal  "${client}"  "${sync_port}"
                 log_error "- Failed to get ipv6 address from Server"
             fi
+            log_info "- Server ipv6 address: $(cat ${path_ipv6_addr})"
         fi
 
         systemctl restart sshd || service sshd restart || log_error "- Failed to restart sshd"
@@ -311,7 +313,7 @@ config_nfs()
     if [ $? -ne 0 ]; then
         log_error "- Error: nfs not installed. Exiting"
     fi
-    if [[ ${K_DIST_NAME} == "el" ]] && [ ${K_DIST_VER} -lt 7 ]; then
+    if [ "${K_DIST_NAME}" = "el" ] && [ "${K_DIST_VER}" -lt 7 ]; then
         log_warn "- Warning: You need to manually configure iptables rules for NFS on RHEL 6."
         open_firewall_port tcp 2049
         open_firewall_port udp 2049
