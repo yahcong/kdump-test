@@ -23,7 +23,7 @@
 . ../lib/crash.sh
 
 # This is a muli-host tests has to be ran on both Server/Client.
-ssh_v6_sysrq_test()
+nfs_v6_sysrq_test()
 {
     if [ -z "${SERVERS}" -o -z "${CLIENTS}" ]; then
         log_error "No Server or Client hostname"
@@ -36,10 +36,9 @@ ssh_v6_sysrq_test()
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare
         multihost_prepare
-        config_ssh v6
+        config_nfs v6
 
         if [[ $(get_role) == "client" ]]; then
-            kdump_restart
             report_system_info
 
             trigger_sysrq_crash
@@ -49,20 +48,24 @@ ssh_v6_sysrq_test()
             log_error "- Failed to trigger crash."
 
         elif [[ $(get_role) == "server" ]]; then
-            log_info "- Waiting at ${done_sync_port} for signal from client that test/crash is done."
+            log_info "- Waiting for signal that test is done at client."
             wait_for_signal ${done_sync_port}
-
-            log_info "- Checking vmcore on ssh server."
-            validate_vmcore_exists flat
             ready_to_exit
         fi
     else
         rm -f "${C_REBOOT}"
-        log_info "- Notifying server that crash is done at client."
+        copy_nfs
+        local retval=$?
+
+        log_info "- Notifying server that test is done at client."
         send_notify_signal "${SERVERS}" ${done_sync_port}
+
+        [ ${retval} -eq 0 ] || log_error "- Failed to copy vmcore"
+
+        validate_vmcore_exists
         ready_to_exit
     fi
 }
 
 log_info "- Start"
-ssh_v6_sysrq_test
+nfs_v6_sysrq_test

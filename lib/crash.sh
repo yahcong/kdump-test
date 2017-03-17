@@ -31,26 +31,34 @@
 get_vmcore_path()
 {
     local vmcore_format=$1
-    local vmcore_path=""
+    local vmcore_path
+    local vmcore_name
 
-    local vmcore_name="vmcore"
     if [[ ${vmcore_format} == "flat" ]]; then
         vmcore_name="vmcore.flat"
     elif [[ ${vmcore_format} == "dmesg" ]]; then
         vmcore_name="vmcore-dmesg.txt"
+    else
+        vmcore_name="vmcore"
     fi
 
-    [ -f "${K_PATH}" ] && vmcore_path=$(cat "${K_PATH}") || vmcore_path="${K_DEFAULT_PATH}"
+    if [ -f "${K_PATH}" ]; then
+        vmcore_path=$(cat "${K_PATH}")
+    else
+        vmcore_path="${K_DEFAULT_PATH}"
+    fi
+
 
     if [ -f "${K_NFS}" ]; then
-        vmcore_path="$(cat "${K_NFS}")${vmcore_path}" # need update
+        local export_path=$(cat "${K_NFS}")
+        vmcore_path=${export_path}${vmcore_path}
     fi
 
     local vmcore_full_path
     vmcore_full_path=$(find "${vmcore_path}" -newer /etc/kdump.conf -name "${vmcore_name}" -type f)
     count=$(echo $vmcore_full_path | wc -w)
     if [ $count -gt 1 ]; then
-        log_error "- More than 1 vmcore is found in ${vmcore_path}. Expect 1 or 0."
+        log_error "- More than one vmcore is found in ${vmcore_path}. Expect 1 or 0."
     else
         echo $vmcore_full_path
     fi

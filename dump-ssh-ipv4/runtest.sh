@@ -32,6 +32,7 @@ ssh_sysrq_test()
 
     # port used for client/server sync
     local done_sync_port=35413
+    open_firewall_port tcp "${done_sync_port}"
 
     if [[ ! -f "${C_REBOOT}" ]]; then
         kdump_prepare

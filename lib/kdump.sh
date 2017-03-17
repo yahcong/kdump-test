@@ -55,6 +55,7 @@ D_REBOOT="${K_TMP_DIR}/D_REBOOT"
 # e.g. cat KDUMP-PATH: ${MP%/}${KPATH}
 K_PATH="${K_TMP_DIR}/KDUMP-PATH"
 K_RAW="${K_TMP_DIR}/KDUMP-RAW"
+K_NFS="${K_TMP_DIR}/KDUMP-NFS"  # file storing the nfs exports path
 
 K_HWINFO_FILE="${K_INF_DIR}/hwinfo.log"
 K_INITRAMFS_LIST="${K_INF_DIR}/initramfs.list"
@@ -63,6 +64,7 @@ K_PREFIX_FWD="${K_INF_DIR}/FIREWALLD"
 K_PREFIX_IPT="${K_INF_DIR}/IPTABLES"
 K_PREFIX_SSH="${K_INF_DIR}/SSHD_ENABLE"
 
+readonly K_EXPORT="/mnt/testarea/nfs"
 readonly K_LOCK_AREA="/root"
 readonly K_LOCK_SSH_ID_RSA="${K_LOCK_AREA}/.ssh/id_rsa_kdump"
 readonly K_RETRY_COUNT=1000
@@ -106,7 +108,8 @@ install_rpm()
 install_rpm_from_repo()
 {
     local cmd=yum
-    [ $(dnf --version) ] && cmd=dnf
+
+    dnf --verion && cmd=dnf
 
     if [[ $# -ge 2 ]]; then
         local pkg=$1
