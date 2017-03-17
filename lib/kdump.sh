@@ -45,7 +45,7 @@ TESTAREA=${TESTAREA:-"/mnt/testarea"}
 # Test dirs:
 K_TMP_DIR="${TESTAREA}/tmp"
 K_INF_DIR="${TESTAREA}/info"
-K_BAK_DIR="${K_TMP_DIR}/bk"
+K_BAK_DIR="${TESTAREA}/bk"
 
 K_REBOOT="${K_TMP_DIR}/K_REBOOT"
 C_REBOOT="./C_REBOOT"

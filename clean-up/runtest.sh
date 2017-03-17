@@ -16,12 +16,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Author: Qiao Zhao <qzhao@redhat.com>
-# Update: Ziqian SUN <zsun@redhat.com>
+# Update: Xiaowu Wu <xiawu@redhat.com>
 
 . ../lib/kdump.sh
 
 clean_up()
 {
+    # expend filename patterns to null string if match no files.
+    shopt -s nullglob
+
     if [ -f "${K_PATH}" ]; then
         local path=$(cat "${K_PATH}")
         if [ -d "${path}" ]; then
@@ -42,44 +45,45 @@ clean_up()
     log_info "- Restoring firewall status."
 
     log_info "- Restoring iptables/ip6tables rules."
-    for iport in $(ls ${K_PREFIX_IPT}_tcp_*); do
-        iptables -D INPUT -p tcp --dport $(echo $iport| awk -F '_' '{print $3}')
-        ip6tables -D INPUT -p tcp --dport $(echo $iport| awk -F '_' '{print $3}')
+    for iport in "${K_PREFIX_IPT}"_tcp_*    ; do
+        iptables -D INPUT -p tcp --dport "$(echo $iport | awk -F '_' '{print $3}')"
+        ip6tables -D INPUT -p tcp --dport "$(echo $iport | awk -F '_' '{print $3}')"
         service iptables save
         service ip6tables save
     done
-    for iport in $(ls ${K_PREFIX_IPT}_udp_*); do
-        iptables -D INPUT -p udp --dport $(echo $iport| awk -F '_' '{print $3}')
-        ip6tables -D INPUT -p udp --dport $(echo $iport| awk -F '_' '{print $3}')
+    for iport in "${K_PREFIX_IPT}"_udp_* ; do
+        iptables -D INPUT -p udp --dport "$(echo $iport | awk -F '_' '{print $3}')"
+        ip6tables -D INPUT -p udp --dport "$(echo $iport | awk -F '_' '{print $3}')"
         service iptables save
         service ip6tables save
     done
 
     log_info "- Restoring firewall-cmd rules."
-    for iport in $(ls ${K_PREFIX_FWD}_tcp_*); do
-        firewall-cmd --remove-port=$(echo $iport| awk -F '_' '{print $3}')/tcp --permanent
-        firewall-cmd --remove-port=$(echo $iport| awk -F '_' '{print $3}')/tcp
+    for i in "${K_PREFIX_FWD}"_tcp_* ; do
+        firewall-cmd --remove-port="$(echo $i | awk -F '_' '{print $3}')/tcp" --permanent
+        firewall-cmd --remove-port="$(echo $i | awk -F '_' '{print $3}')/tcp"
     done
-    for iport in $(ls ${K_PREFIX_FWD}_udp_*); do
-        firewall-cmd --remove-port=$(echo $iport| awk -F '_' '{print $3}')/udp --permanent
-        firewall-cmd --remove-port=$(echo $iport| awk -F '_' '{print $3}')/udp
+    for i in "${K_PREFIX_FWD}"_udp_* ; do
+        firewall-cmd --remove-port="$(echo $i | awk -F '_' '{print $3}')/udp" --permanent
+        firewall-cmd --remove-port="$(echo $i | awk -F '_' '{print $3}')/udp"
     done
-    for iservice in $(ls ${K_PREFIX_FWD}_service_*); do
-        firewall-cmd --remove-service=$(echo $iservice| awk -F '_' '{print $3}') --permanent
-        firewall-cmd --remove-service=$(echo $iservice| awk -F '_' '{print $3}')
+    for i in "${K_PREFIX_FWD}"_service_* ; do
+        firewall-cmd --remove-service="$(echo $i | awk -F '_' '{print $3}')" --permanent
+        firewall-cmd --remove-service="$(echo $i | awk -F '_' '{print $3}')"
     done
 
     # Restore sshd status
-    if [ -f ${K_PREFIX_SSH} ]; then
+    if [ -f "${K_PREFIX_SSH}" ]; then
         log_info "- Restoring sshd status."
         systemctl disable sshd || chkconfig sshd off
-
         if [ $? -eq 0 ]; then
             log_info "- Disabled sshd service."
         else
             log_error "- Failed to disable sshd service."
         fi
     fi
+
+
 
     log_info "- Restoring kdump conf files."
     cp -f "${K_BAK_DIR}"/kdump.conf ${K_CONFIG}
