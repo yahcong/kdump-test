@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/analyse-objdump
+owner="Qiao Zhao"
+description="kdump-test for analyse-objdump"
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true

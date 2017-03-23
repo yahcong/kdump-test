@@ -167,7 +167,6 @@ EOF
     log_info "- Done running and checking crash cmd."
 }
 
-
 # @usage: check_crash_output <output_file>
 # @description: check crash output for errors or warns
 # @param1: output_file  # file where the error/warning msg will be checked.
@@ -334,50 +333,37 @@ check_crash_output()
     log_info "- Finished analysing crash output."
 }
 
-
-
-
-
-
-# To-Do
-
-# @usage: analyse_live <args> <vmlinuz> <vmcore>
-# @description: analyze vmcore by crash
-# @param1: args  # crash args
-# @param2: aux   # vmlinuz with debuginfo
-# @param3: core  # location of vmcore
-analyse_live()
+# @usage: check_gdb_output <output_file>
+# @description: check gdb output for errors or warns
+# @param1: output_file  # file where the error/warning msg will be checked.
+check_gdb_output()
 {
-    echo "analyse_live"
+    output_file=$1
+
+    rm -f ${K_CRASH_REPORT}
+    touch ${K_CRASH_REPORT}
+
+    log_info "- Checking crash output for errors."
+    log_info "- Search following words for errors."
+    log_info "- 'fail'"
+    log_info "- 'error'"
+    log_info "- 'invalid'"
+
+    log_info "- Following patterns will be skipped when searching for warnings."
+    log_info "- 'warning: shared library handler failed to enable breakpoint'"
+
+
+    if grep -v 'warning: shared library handler failed to enable breakpoint' \
+        "${output_file}" |
+        grep -i -e 'fail' \
+                -e 'error' \
+                -e 'invalid' \
+       2>&1; then
+        log_error "- Found errors/warnings in GDB commands. \
+            See ${output_file} for more details."
+    else
+        log_info "- Finished analysing GDB output.\
+            See ${output_file} for more details."
+
 }
 
-analyse_dmesg()
-{
-    echo "analyse vmcore-dmesg.txt"
-}
-
-
-analyse_by_basic()
-{
-    echo "analyse vmcore use basic option"
-}
-
-analyse_by_gdb()
-{
-    echo "analyse vmcore by gdb"
-}
-
-analyse_by_readelf()
-{
-    echo "analyse vmcore by readelf"
-}
-
-analyse_by_trace_cmd()
-{
-    echo "analyse vmcore by trace_cmd"
-}
-
-analyse_by_gcore_cmd()
-{
-    echo "analyse vmcore by gcore_cmd"
-}
