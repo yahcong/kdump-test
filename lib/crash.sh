@@ -71,20 +71,32 @@ get_vmcore_path()
 # @description:
 #   check whether the vmcore exists
 #   it checks vmcore/vmcroe.flat/vmcore-dmesg based on the <vmcore_format>
-# @param1: vmcore_format # "vmcore" "flat" "dmesg". default to "dmesg"
+# @param1: vmcore_format # "vmcore" "flat" "dmesg".
+#          if not specified, validate existence of both "vmcore" and "dmesg"
 # @return: if no vmcore is found, exit with error.
 validate_vmcore_exists()
 {
     local vmcore_format=$1
 
-    log_info "- Validate if vmcore exists"
-    local vmcore_full_path=$(get_vmcore_path $vmcore_format)
+    log_info "- Validate if ${vmcore_format:-vmcore} exists"
+    local vmcore_full_path=$(get_vmcore_path "${vmcore_format}")
 
     if [ ! -z "${vmcore_full_path}" ]; then
-        log_info "- Found vmcore file at ${vmcore_full_path}"
+        log_info "- Found vmcore ${vmcore_format} file at ${vmcore_full_path}"
     else
         log_error "- No vmcore file is found."
     fi
+
+    # if no vmcore format is specified, check vmcore-dmesg as well.
+    [[ -z ${vmcore_format} ]] && {
+        log_info "- Validate if vmcore-dmesg.txt exists"
+        local vmcore_full_path=$(get_vmcore_path "dmesg")
+        if [ ! -z "${vmcore_full_path}" ]; then
+            log_info "- Found vmcore-dmesg file at ${vmcore_full_path}"
+        else
+            log_error "- No vmcore-dmesg is found."
+        fi
+    }
 }
 
 # @usage: validate_vmcore_not_exists <vmcore_format>
