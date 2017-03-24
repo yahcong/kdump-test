@@ -29,7 +29,11 @@ dump_fail_default_rootfs()
         MP=${TESTARGS:-"/ext4"}
         OPTION=""
         config_kdump_fs
-        config_kdump_any "default dump_to_rootfs"
+        if [[ $K_DIST_VER -le 6 ]]; then
+            config_kdump_any "default mount_root_run_init"
+        else
+            config_kdump_any "default dump_to_rootfs"
+        fi
         config_kdump_filter "-nosuchoption"
         report_system_info
 
