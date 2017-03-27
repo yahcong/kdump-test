@@ -344,6 +344,24 @@ append_config()
     sync;sync;sync
 }
 
+# @usage: remove_config <config>
+# @description:
+#   remove config from kdump.config
+# @param1: config
+remove_config()
+{
+    log_info "- Modifying ${K_CONFIG}"
+    local config="$1"
+
+    if [[ -z "$config" ]]; then
+        log_info "- Nothing to modify."
+        return
+    fi
+
+    log_info "- Removing existing ${1%%[[:space:]]*} settings."
+    sed -i "/^${1%%[[:space:]]*} /d" ${K_CONFIG}
+    sync;sync;sync
+}
 
 # @usage: config_kdump_any <config>
 # @description:

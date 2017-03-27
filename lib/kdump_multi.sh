@@ -168,7 +168,7 @@ send_notify_signal()
         (( count = count - 1 ))
     done
 
-    if [ retval -eq 1 ]; then
+    if [ "${retval}" -eq 1 ]; then
         log_error "- Failed to notify server, got timeout."
     else
         log_info "- Sent notify signal to ${server} at ${port} successfully"
