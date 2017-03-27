@@ -36,33 +36,39 @@ get_vmcore_path()
     local vmcore_path
     local vmcore_name
 
-    if [[ ${vmcore_format} == "flat" ]]; then
-        vmcore_name="vmcore.flat"
-    elif [[ ${vmcore_format} == "dmesg" ]]; then
-        vmcore_name="vmcore-dmesg.txt"
-    else
-        vmcore_name="vmcore"
-    fi
+    case "${vmcore_format}" in
+        "flat")
+            vmcore_name="vmcore.flat"
+            ;;
+        "dmesg")
+            vmcore_name="vmcore-dmesg.txt"
+            ;;
+        *)
+            vmcore_name="vmcore"
+            ;;
+    esac
 
-    if [ -f "${K_PATH}" ]; then
-        vmcore_path=$(cat "${K_PATH}")
-    else
-        vmcore_path="${K_DEFAULT_PATH}"
-    fi
+    [ -f "${K_PATH}" ] && vmcore_path=$(cat "${K_PATH}") || vmcore_path="${K_DEFAULT_PATH}"
 
-
-    if [ -f "${K_NFS}" ]; then
-        local export_path=$(cat "${K_NFS}")
+    [ -f "${K_NFS}" ] &&{
+        local export_path
+        export_path=$(cat "${K_NFS}")
         vmcore_path=${export_path}${vmcore_path}
-    fi
+    }
+
+    [ ! -d "${vmcore_path}" ] && {
+        log_error "- Failed to find vmcore. ${vmcore_path} is not a directory"
+    }
+
+    local find_cmd="find "\"${vmcore_path}\"" -newer "\"${K_CONFIG}\"" -name "\"${vmcore_name}\"" -type f"
+    count=$(eval "${find_cmd}" | wc -l)
 
     local vmcore_full_path
-    vmcore_full_path=$(find "${vmcore_path}" -newer /etc/kdump.conf -name "${vmcore_name}" -type f)
-    count=$(echo $vmcore_full_path | wc -w)
-    if [ $count -gt 1 ]; then
+    if [[ ${count} -gt 1 ]]; then
         log_error "- More than one vmcore is found in ${vmcore_path}. Expect 1 or 0."
     else
-        echo $vmcore_full_path
+        vmcore_full_path=$(eval "${find_cmd}")
+        echo "${vmcore_full_path}"
     fi
 }
 
@@ -77,9 +83,10 @@ get_vmcore_path()
 validate_vmcore_exists()
 {
     local vmcore_format=$1
+    local vmcore_full_path
 
     log_info "- Validate if ${vmcore_format:-vmcore} exists"
-    local vmcore_full_path=$(get_vmcore_path "${vmcore_format}")
+    vmcore_full_path=$(get_vmcore_path "${vmcore_format}")
 
     if [ ! -z "${vmcore_full_path}" ]; then
         log_info "- Found vmcore ${vmcore_format} file at ${vmcore_full_path}"
@@ -90,7 +97,7 @@ validate_vmcore_exists()
     # if no vmcore format is specified, check vmcore-dmesg as well.
     [[ -z ${vmcore_format} ]] && {
         log_info "- Validate if vmcore-dmesg.txt exists"
-        local vmcore_full_path=$(get_vmcore_path "dmesg")
+        vmcore_full_path=$(get_vmcore_path "dmesg")
         if [ ! -z "${vmcore_full_path}" ]; then
             log_info "- Found vmcore-dmesg file at ${vmcore_full_path}"
         else
@@ -108,9 +115,10 @@ validate_vmcore_exists()
 validate_vmcore_not_exists()
 {
     local vmcore_format=$1
+    local vmcore_full_path
 
     log_info "- Validate if vmcore not exists"
-    local vmcore_full_path=$(get_vmcore_path $vmcore_format)
+    vmcore_full_path=$(get_vmcore_path "${vmcore_format}")
 
     if [ ! -z "${vmcore_full_path}" ]; then
         log_error "- Found vmcore file at ${vmcore_full_path}"
@@ -174,8 +182,8 @@ check_crash_output()
 {
     output_file=$1
 
-    rm -f ${K_CRASH_REPORT}
-    touch ${K_CRASH_REPORT}
+    rm -f "${K_CRASH_REPORT}"
+    touch "${K_CRASH_REPORT}"
 
     log_info "- Checking crash output for errors"
     log_info "- Search following keywords for errors."
@@ -324,7 +332,7 @@ check_crash_output()
     log_info "- WARNING MESSAGES END"
 
 
-    if [ ${error_found} -eq 0 -o ${warn_found} -eq 0 ]; then
+    if [[ ${error_found} -eq 0 || ${warn_found} -eq 0 ]]; then
         report_file "${K_CRASH_REPORT}"
         log_error "- Found errors/warnings in Crash commands. \
             See ${output_file} for more details."
@@ -340,8 +348,8 @@ check_gdb_output()
 {
     output_file=$1
 
-    rm -f ${K_CRASH_REPORT}
-    touch ${K_CRASH_REPORT}
+    rm -f "${K_CRASH_REPORT}"
+    touch "${K_CRASH_REPORT}"
 
     log_info "- Checking crash output for errors."
     log_info "- Search following words for errors."
@@ -364,6 +372,7 @@ check_gdb_output()
     else
         log_info "- Finished analysing GDB output.\
             See ${output_file} for more details."
+    fi
 
 }
 
