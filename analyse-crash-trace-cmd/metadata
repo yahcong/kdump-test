@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/analyse-crash-trace-cmd
+owner="Qiao Zhao"
+description="kdump-test for analyse-crash-trace-cmd"
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true

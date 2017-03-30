@@ -24,6 +24,9 @@
 K_CRASH_REPORT="${K_TMP_DIR}/crash_report.txt"  # Filtered crash cmd output for error/warns
 SKIP_WARNING_PAT=${SKIP_WARNING_PAT:-}
 
+DEBUG_PATH=/sys/kernel/debug
+TRACE_PATH=${DEBUG_PATH}/tracing
+
 # @usage: get_vmcore_path <vmcore_format>
 # @description:
 #   get the full path to the vmcore
