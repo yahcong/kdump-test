@@ -28,15 +28,18 @@ enable_tracer()
     else
         mount -t debugfs nodev ${DEBUG_PATH}
     fi
+    current_tracer=wakeup
 
     echo 1 > ${TRACE_PATH}/tracing_on
-    echo "function_graph" > ${TRACE_PATH}/current_tracer
+
+    echo " - tracer: ${current_tracer} enabled"
+    echo "${current_tracer}" > ${TRACE_PATH}/current_tracer
 
     log_info "- TRACING_ENABLED: " $(cat "${TRACE_PATH}/tracing_on")
     log_info "- AVAILABLE_TRACERS: " $(cat "${TRACE_PATH}/available_tracers")
     log_info "- CURRENT_TRACER: " $(cat "${TRACE_PATH}/current_tracer")
 
-    cat "${TRACE_PATH}/trace_pipe" | head
+    grep "tracer: ${current_tracer}" "${TRACE_PATH}/trace"
     [ $? -ne 0 ] && log_error "- Tracer is not enabled. No trace data in pipe!"
 }
 
