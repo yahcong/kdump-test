@@ -28,7 +28,7 @@ enable_tracer()
     else
         mount -t debugfs nodev ${DEBUG_PATH}
     fi
-    current_tracer=wakeup
+    local current_tracer=wakeup
 
     echo 1 > ${TRACE_PATH}/tracing_on
 

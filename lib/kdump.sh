@@ -238,6 +238,8 @@ kdump_prepare()
 
         grep -q 'crashkernel' <<< "${KERARGS}" || {
                 [ "$(cat /sys/kernel/kexec_crash_size)" -eq 0 ] && {
+                    log_info "# cat /sys/kernel/kexec_crash_size"
+                    log_info "- Crash memory is not reserved."
                     log_info "- MemTotal is:" "$(grep MemTotal /proc/meminfo)"
                     KERARGS+=" $(get_kdump_mem)"
                 }
