@@ -17,6 +17,9 @@
 #
 # Author: Yahuan Cong <ycong@redhat.com>
 
+MP=${MP:-"/mnt/data"}
+RAW="true"
+
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
@@ -27,8 +30,6 @@ dump_fs_raw()
         kdump_prepare
 
         config_kdump_filter "-F -c -d 31"
-        MP=${TESTARGS:-"/raw"} 
-        RAW="yes"
         config_kdump_fs
 
         report_system_info

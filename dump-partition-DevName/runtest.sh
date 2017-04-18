@@ -17,6 +17,8 @@
 #
 # Author: Wenjie Cai <wcai@redhat.com>
 
+MP=${MP:-"/mnt/data"}
+
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
@@ -25,10 +27,6 @@ dump_partition_DevName()
 {
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
-
-        MP=${TESTARGS:-"/ext4"} 
-        KPATH=/vmcore
-        OPTION=""
         config_kdump_fs
         report_system_info
 

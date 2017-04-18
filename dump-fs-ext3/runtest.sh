@@ -17,6 +17,9 @@
 #
 # Author: Xiaowu <xiawu@redhat.com>
 
+MP=${MP:-"/mnt/data"}
+OPTION="uuid"
+
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
@@ -26,8 +29,6 @@ dump_fs_ext3()
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 
-        MP=${TESTARGS:-"/ext3"}
-        OPTION="uuid"
         config_kdump_fs ext3
         report_system_info
 

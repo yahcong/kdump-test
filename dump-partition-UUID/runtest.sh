@@ -17,6 +17,9 @@
 #
 # Author: Wenjie Cai <wcai@redhat.com>
 
+MP=${MP:-"/mnt/data"}
+OPTION="uuid"
+
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
@@ -26,9 +29,6 @@ dump_partition_UUID()
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 
-        KPATH=/vmcore
-        MP=${TESTARGS:-"/ext4"}
-        OPTION="uuid"
         config_kdump_fs
         report_system_info
 

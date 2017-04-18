@@ -33,13 +33,13 @@ K_SYS_CONFIG="/etc/sysconfig/kdump"
 K_SCRIPT="../lib/gen-helper-script"
 
 # Test Parameters:
-KDEBUG=${KDEBUG:-"no"}
+KDEBUG=${KDEBUG:-"false"}
 TESTARGS=${TESTARGS:-}
 KPATH=${KPATH:-${K_DEFAULT_PATH}}
 OPTION=${OPTION:-}
 MP=${MP:-/}
 LABEL=${LABEL:-label-kdump}
-RAW=${RAW:-no}
+RAW=${RAW:-"false"}
 TESTAREA=${TESTAREA:-"/mnt/testarea"}
 
 # Test dirs:
@@ -70,7 +70,7 @@ readonly K_LOCK_SSH_ID_RSA="${K_LOCK_AREA}/.ssh/id_rsa_kdump"
 readonly K_RETRY_COUNT=1000
 readonly K_CPU_THRESHOLD=8
 
-[[ "${KDEBUG}" == "yes" ]] && set -x
+[[ "${KDEBUG,,}" == "true" ||  ]] && set -x
 
 [ ! -d "${K_TMP_DIR}" ] &&  mkdir -p "${K_TMP_DIR}"
 [ ! -d "${K_INF_DIR}" ] &&  mkdir -p "${K_INF_DIR}"
@@ -436,7 +436,7 @@ config_kdump_fs()
     local target=""
 
     # get dev, fstype
-    if [ "yes" == "$RAW" -a -f "${K_RAW}" ]; then
+    if [[ "${RAW,,}" == "false" && -f "${K_RAW}" ]]; then
         dev=$(cut -d" " -f1 "${K_RAW}")
         fstype=(cut -d" " -f2 "${K_RAW}")
         rm -f "${K_RAW}"
@@ -472,7 +472,7 @@ config_kdump_fs()
             ;;
     esac
 
-    if [ "yes" == "$RAW" -a -n "$target" ]; then
+    if [[ "${RAW,,}" == "true" && -n "$target" ]]; then
         append_config "raw $target"
         sed -i "/[ \t]\\$MP[ \t]/d" /etc/fstab
         echo "$dev $fstype" > "${K_RAW}"

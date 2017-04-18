@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2016 Red Hat, Inc. All rights reserved.
+# Copyright (c) 2017 Red Hat, Inc. All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,19 +17,22 @@
 #
 # Author: Xiaowu <xiawu@redhat.com>
 
-MP=${MP:-"/mnt/data"}
-OPTION="uuid"
+MP=${MP:-"/home"}
+KPATH=${KPATH:-"/nonrootlvm"}
 
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
 
-dump_fs_ext4()
+dump_lvm()
 {
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 
-        config_kdump_fs ext4
+        findmnt -kcno SOURCE "$MP" | grep "/dev/mapper/"
+        [ $? -eq 0 ] || log_error "- $MP is not LVM."
+
+        config_kdump_fs
         report_system_info
 
         trigger_sysrq_crash
@@ -42,4 +45,4 @@ dump_fs_ext4()
 }
 
 log_info "- Start"
-dump_fs_ext4
+dump_lvm

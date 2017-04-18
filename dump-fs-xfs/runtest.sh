@@ -17,6 +17,9 @@
 #
 # Author: Xiaowu <xiawu@redhat.com>
 
+MP=${MP:-"/mnt/data"}
+OPTION="uuid"
+
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
@@ -26,11 +29,9 @@ dump_fs_xfs()
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 
-        MP=${TESTARGS:-"/xfs"}
-        OPTION="uuid"
         config_kdump_fs xfs
         report_system_info
-        
+
         trigger_sysrq_crash
     else
         rm -f "${C_REBOOT}"

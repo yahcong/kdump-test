@@ -17,6 +17,8 @@
 #
 # Author: Yahuan Cong <ycong@redhat.com>
 
+MP=${MP:-"/mnt/data"}
+
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
@@ -26,8 +28,6 @@ dump_fail_default_rootfs()
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 
-        MP=${TESTARGS:-"/ext4"}
-        OPTION=""
         config_kdump_fs
         if [[ $K_DIST_VER -le 6 ]]; then
             config_kdump_any "default mount_root_run_init"
