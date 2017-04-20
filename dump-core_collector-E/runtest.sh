@@ -25,7 +25,7 @@ dump_core_collector_E()
 {
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
-
+        # dump vmcore in ELF format
         config_kdump_filter "-E -d 31"
         report_system_info
 

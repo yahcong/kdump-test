@@ -551,6 +551,9 @@ config_kdump_sysconfig()
             ;;
     esac
     [ $? -ne 0 ] && log_error "- Failed to updated kdump sysconfig."
+    sync;sync;sync
+    # it requires to reload the crash kernel for kdump
+    kdump_restart
 }
 
 
