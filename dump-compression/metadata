@@ -1,0 +1,9 @@
+[General]
+name=/kdump-test/dump_compression
+owner="Qiao Zhao"
+description="kdump-test for dumping with different compression options"
+
+[restraint]
+entry_point=./runtest.sh
+repoRequires=lib
+use_pty=true

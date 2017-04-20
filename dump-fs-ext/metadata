@@ -1,7 +1,7 @@
 [General]
-name=/kdump-test/dump-core_collector-d
+name=/kdump-test/dump-fs-ext
 owner="Qiao Zhao"
-description="kdump-test for dump-core_collector-d"
+description="kdump-test for dumping to ext partitions"
 
 [restraint]
 entry_point=./runtest.sh

@@ -1,9 +1,0 @@
-[General]
-name=/kdump-test/dump-core_collector-l
-owner="Qiao Zhao"
-description="kdump-test for dump-core_collector-l"
-
-[restraint]
-entry_point=./runtest.sh
-repoRequires=lib
-use_pty=true

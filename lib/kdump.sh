@@ -70,7 +70,7 @@ readonly K_LOCK_SSH_ID_RSA="${K_LOCK_AREA}/.ssh/id_rsa_kdump"
 readonly K_RETRY_COUNT=1000
 readonly K_CPU_THRESHOLD=8
 
-[[ "${KDEBUG,,}" == "true" ||  ]] && set -x
+[[ "${KDEBUG,,}" == "true" ]] && set -x
 
 [ ! -d "${K_TMP_DIR}" ] &&  mkdir -p "${K_TMP_DIR}"
 [ ! -d "${K_INF_DIR}" ] &&  mkdir -p "${K_INF_DIR}"

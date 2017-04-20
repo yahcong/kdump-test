@@ -1,7 +1,7 @@
 [General]
-name=/kdump-test/dump-core_collector-c
+name=/kdump-test/dump-nr_cpus
 owner="Qiao Zhao"
-description="kdump-test for dump-core_collector-c"
+description="kdump-test for dump-nr_cpus"
 
 [restraint]
 entry_point=./runtest.sh

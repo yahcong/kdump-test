@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2016 Red Hat, Inc. All rights reserved.
+# Copyright (c) 2017 Red Hat, Inc. All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 #
 # Author: Xiaowu <xiawu@redhat.com>
 
+TESTARGS=${TESTARGS:="ext4"}
 MP=${MP:-"/mnt/data"}
 OPTION="uuid"
 
@@ -24,12 +25,13 @@ OPTION="uuid"
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
 
-dump_fs_ext3()
+dump_fs_ext()
 {
     if [ ! -f "${C_REBOOT}" ]; then
-        kdump_prepare
+        [[ "${TESTARGS}" == ext* ]] || log_error "- ${TESTARGS} is not a valid ext type"
 
-        config_kdump_fs ext3
+        kdump_prepare
+        config_kdump_fs ${TESTARGS}
         report_system_info
 
         trigger_sysrq_crash
@@ -42,4 +44,4 @@ dump_fs_ext3()
 }
 
 log_info "- Start"
-dump_fs_ext3
+dump_fs_ext

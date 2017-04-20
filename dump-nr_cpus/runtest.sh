@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2016 Red Hat, Inc. All rights reserved.
+# Copyright (c) 2017 Red Hat, Inc. All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,20 +15,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Yahuan Cong <ycong@redhat.com>
+# Author: Xiaowu Wu <xiawu@redhat.com>
 
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
 
-dump_core_collector_c()
+dump_nr_cpus()
 {
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
 
-        config_kdump_filter "-c -d 31"
-        report_system_info
+        local cpu_count=$(grep -c "processor" /proc/cpuinfo)
+        log_info "- Number of processors: ${cpu_count}"
 
+        [ -z "${TESTARGS}" ] &&
+        {
+            if [ ${cpu_count} -le ${K_CPU_THRESHOLD} ]; then
+                TESTARGS=2
+            else
+                TESTARGS=4
+            fi
+        }
+
+        local key=KDUMP_COMMANDLINE_APPEND
+        config_kdump_sysconfig $key replace nr_cpus=1 nr_cpus=${TESTARGS}
+        report_system_info
         trigger_sysrq_crash
     else
         rm -f "${C_REBOOT}"
@@ -38,5 +50,4 @@ dump_core_collector_c()
 }
 
 log_info "- Start"
-dump_core_collector_c
-
+dump_nr_cpus

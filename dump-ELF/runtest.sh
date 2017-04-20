@@ -15,18 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Yahuan Cong <ycong@redhat.com>
+# Author: Xiaowu Wu <xiawu@redhat.com>
 
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
 
-dump_core_collector_l()
+dump_ELF()
 {
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
-
-        config_kdump_filter "-l -d 31"
+        # dump vmcore in ELF format
+        config_kdump_filter "-E -d 31"
         report_system_info
 
         trigger_sysrq_crash
@@ -38,4 +38,5 @@ dump_core_collector_l()
 }
 
 log_info "- Start"
-dump_core_collector_l
+dump_ELF
+

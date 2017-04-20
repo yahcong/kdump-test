@@ -21,13 +21,15 @@
 . ../lib/kdump_report.sh
 . ../lib/crash.sh
 
-dump_nr_cpus_2()
+dump_dump_level()
 {
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
-        local key=KDUMP_COMMANDLINE_APPEND
-        config_kdump_sysconfig $key replace nr_cpus=1 nr_cpus=2
+
+        local filter_level=${TESTARGS:-0}
+        config_kdump_filter "-c -d $filter_level"
         report_system_info
+
         trigger_sysrq_crash
     else
         rm -f "${C_REBOOT}"
@@ -37,4 +39,5 @@ dump_nr_cpus_2()
 }
 
 log_info "- Start"
-dump_nr_cpus_2
+dump_dump_level
+

@@ -28,7 +28,7 @@ dump_fs_raw()
 {
     if [ ! -f "${C_REBOOT}" ]; then
         kdump_prepare
-
+        # raw dump requires to dump data in the flattened format
         config_kdump_filter "-F -c -d 31"
         config_kdump_fs
 

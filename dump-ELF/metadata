@@ -1,7 +1,7 @@
 [General]
-name=/kdump-test/dump-core_collector-p
+name=/kdump-test/dump_ELF
 owner="Qiao Zhao"
-description="kdump-test for dump-core_collector-p"
+description="kdump-test for dumping vmcore in ELF format"
 
 [restraint]
 entry_point=./runtest.sh
