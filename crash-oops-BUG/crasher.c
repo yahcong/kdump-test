@@ -17,6 +17,7 @@
  *
  * Copyright © IBM Corporation 2007
  *
+ * Copyright © Red Hat, Inc. 2016
  */
 
 
