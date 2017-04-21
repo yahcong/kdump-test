@@ -17,7 +17,7 @@
 #
 # Author: Wenjie Cai <wcai@redhat.com>
 
-MP=${MP:-"/mnt/data"}
+MP=${MP:-"/ext4"}
 OPTION="label"
 LABEL="label-vmcore"
 

@@ -17,7 +17,7 @@
 #
 # Author: Yahuan Cong <ycong@redhat.com>
 
-MP=${MP:-"/mnt/data"}
+MP=${MP:-"/ext4"}
 
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh

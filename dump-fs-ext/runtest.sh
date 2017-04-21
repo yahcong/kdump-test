@@ -18,7 +18,7 @@
 # Author: Xiaowu <xiawu@redhat.com>
 
 TESTARGS=${TESTARGS:="ext4"}
-MP=${MP:-"/mnt/data"}
+MP=${MP:-"/ext4"}
 OPTION="uuid"
 
 . ../lib/kdump.sh

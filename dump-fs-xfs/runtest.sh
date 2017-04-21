@@ -17,7 +17,7 @@
 #
 # Author: Xiaowu <xiawu@redhat.com>
 
-MP=${MP:-"/mnt/data"}
+MP=${MP:-"/xfs"}
 OPTION="uuid"
 
 . ../lib/kdump.sh
