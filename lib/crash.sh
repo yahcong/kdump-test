@@ -307,6 +307,8 @@ check_crash_output()
 
     log_info "- 'mod: cannot find or load object file for crasher module'"
     log_info "- 'mod: cannot find or load object file for altsysrq module'"
+    log_info "- 'mod: cannot find or load object file for crash_warn module'"
+
     log_info "- 'cannot determine file and line number'"
 
     # It's impossible for Crash to determine the starting backtrace point for
@@ -321,6 +323,7 @@ check_crash_output()
     grep -v \
          -e "mod: cannot find or load object file for crasher module" \
          -e "mod: cannot find or load object file for altsysrq module" \
+         -e "mod: cannot find or load object file for crash_warn module" \
          -e "cannot determine file and line number" \
          -e "cannot be determined: try -t or -T options" \
          -e "WARNING: kernel relocated" \

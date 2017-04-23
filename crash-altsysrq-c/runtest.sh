@@ -27,7 +27,7 @@ crash_altsysrq_c()
         kdump_prepare
         report_system_info
 
-        make_module "altsysrq"
+        make_module "altsysrq" .
         insmod ./altsysrq/altsysrq.ko || log_error "- Fail to insmod altsysrq."
 
         touch "${C_REBOOT}"

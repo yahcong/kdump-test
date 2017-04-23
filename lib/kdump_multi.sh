@@ -238,7 +238,7 @@ config_ssh()
         send_notify_signal "${server}" "${sync_port}"
 
     elif [[ $(get_role) == "server" ]]; then
-        prepare_ssh_connection server
+        prepare_ssh_connection server "${ip_version}"
 
         log_info "- Waiting for signal that kdump config is done at client"
         wait_for_signal ${sync_port}
