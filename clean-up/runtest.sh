@@ -39,7 +39,7 @@ clean_up()
     if [ $? -eq 0 ]; then
         log_info "- Deleted vmcore files."
     else
-        log_error "- Failed to delete vmcore files."
+        log_fatal_error "- Failed to delete vmcore files."
     fi
 
     log_info "- Restoring firewall status."
@@ -79,7 +79,7 @@ clean_up()
         if [ $? -eq 0 ]; then
             log_info "- Disabled sshd service."
         else
-            log_error "- Failed to disable sshd service."
+            log_fatal_error "- Failed to disable sshd service."
         fi
     fi
 

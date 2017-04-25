@@ -39,10 +39,10 @@ quit
 EOF
 
     local vmx="/usr/lib/debug/lib/modules/$(uname -r)/vmlinux"
-    [ ! -f "${vmx}" ] && log_error "- Unable to find vmlinux."
+    [ ! -f "${vmx}" ] && log_fatal_error "- Unable to find vmlinux."
 
     local core=$(get_vmcore_path)
-    [ -z "${core}" ] && log_error "- Unable to find vmcore."
+    [ -z "${core}" ] && log_fatal_error "- Unable to find vmcore."
 
     log_info "- # gdb < ${K_TMP_DIR}/gdb.cmd ${vmx} ${core}"
     gdb < "${K_TMP_DIR}"/gdb.cmd "${vmx}" "${core}" > "${K_TMP_DIR}/gdb.log" 2>&1

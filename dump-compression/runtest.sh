@@ -31,7 +31,7 @@ dump_compression()
         # allowed compression options: -c -l -p
 
         [[ "${TESTARGS}" =~ ^(-c|-l|-p)$ ]] || {
-            log_error "- Invalid compression option ${TESTARGS}"
+            log_fatal_error "- Invalid compression option ${TESTARGS}"
         }
         config_kdump_filter "${TESTARGS} -d 31"
         report_system_info

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2016 Red Hat, Inc. All rights reserved.
+# Copyright (c) 2017 Red Hat, Inc. All rights reserved.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Yahuan Cong<ycong@redhat.com>
+# Author: Yahuan Cong <ycong@redhat.com>
+# Update: Xiaowu Wu <xiawu@redhat.com>
 
 . ../lib/kdump.sh
 . ../lib/kdump_report.sh
@@ -23,10 +24,22 @@
 
 summary_test_result()
 {
+        local total
+        local pass
+        local fail
+        local warn
+
+        total=$(wc -l < "${K_TEST_SUMMARY}")
+        pass=$(grep -o 'Pass' "${K_TEST_SUMMARY}" | wc -l)
+        fail=$(grep -o 'Fail' "${K_TEST_SUMMARY}" | wc -l)
+        warn=$(grep -o 'Warn' "${K_TEST_SUMMARY}" | wc -l)
+
         sed -i '1i\+-------- Test Result -------+' "${K_TEST_SUMMARY}"
-        echo -e "Total:\c" >> "${K_TEST_SUMMARY}"
-        echo -e "\t/Passed:$(grep -o 'Pass' "${K_TEST_SUMMARY}" | wc -l)\c" >> "${K_TEST_SUMMARY}"
-        echo -e "\t/Failed:$(grep -o 'Fail' "${K_TEST_SUMMARY}" | wc -l)" >> "${K_TEST_SUMMARY}"
+        echo "+--------- Summary ----------+" >> "${K_TEST_SUMMARY}"
+        echo -e "Total:\t${total}" >> "${K_TEST_SUMMARY}"
+        echo -e "Passed:\t${pass}" >> "${K_TEST_SUMMARY}"
+        echo -e "Warned:\t${warn}" >> "${K_TEST_SUMMARY}"
+        echo -e "Failed:\t${fail}" >> "${K_TEST_SUMMARY}"
         echo "+-----------------------------+" >> "${K_TEST_SUMMARY}"
         report_file "${K_TEST_SUMMARY}"
 }

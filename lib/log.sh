@@ -90,8 +90,8 @@ log_info()
 log_warn()
 {
     log "WARN" "$@"
+    ready_to_exit 1
 }
-
 
 # @usage: log_error <mesg>
 # @description: log ERROR message and exit
@@ -99,7 +99,17 @@ log_warn()
 log_error()
 {
     log "ERROR" "$@"
-    ready_to_exit 1
+    ready_to_exit 2
+    exit 1
+}
+
+# @usage: log_fatal_error <mesg>
+# @description: log ERROR message and exit
+# @param1: mesg
+log_fatal_error()
+{
+    log "ERROR" "$@"
+    ready_to_exit 3
     exit 1
 }
 
@@ -114,7 +124,13 @@ ready_to_exit()
     report_file "${K_LOG_FILE}"
 
     if is_beaker_env; then
-        if [[ $1 == "1" ]]; then
+        if [[ $1 == "1" ]]; then   # Warn - Report warn and continue to next test
+            echo -e "${K_TEST_NAME}\t\t\tWarn" >> "${K_TEST_SUMMARY}"
+            report_result "${TEST}" "WARN" "1"
+        if [[ $1 == "2" ]]; then   # Error - Report error and continue to next test
+            echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
+            report_result "${TEST}" "FAIL" "1"
+        if [[ $1 == "3" ]]; then   # Fatal error - Report error and abort test
             echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
             report_result "${TEST}" "FAIL" "1"
             rhts-abort -t recipeset
@@ -123,14 +139,21 @@ ready_to_exit()
             report_result "${TEST}" "PASS" "0"
         fi
     else
-        [[ $1 == "1" ]] && {
-        echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
+        if [[ $1 == "1" ]]; then # Warn - Report warn and continue to next test
+            echo -e "${K_TEST_NAME}\t\t\tWarn" >> "${K_TEST_SUMMARY}"
+            log_info "- [WARN] Please check test logs!"
+        if [[ $1 == "2" ]]; then # Error - Report error and exit test
+            echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
             log_info "- [FAIL] Please check test logs!"
             exit 1
-        }
-        echo -e "${K_TEST_NAME}\t\t\tPass" >> "${K_TEST_SUMMARY}"
-        log_info "- [PASS] Tests finished successfully!"
-        exit 0
+        if [[ $1 == "3" ]]; then # Fatal error - Report error and exit test
+            echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
+            log_info "- [FATAL_FAIL] Please check test logs!"
+            exit 1
+        else
+            echo -e "${K_TEST_NAME}\t\t\tPass" >> "${K_TEST_SUMMARY}"
+            log_info "- [PASS] Tests finished successfully!"
+            exit 0
     fi
 }
 

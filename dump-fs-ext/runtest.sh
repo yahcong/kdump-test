@@ -28,7 +28,7 @@ OPTION="uuid"
 dump_fs_ext()
 {
     if [ ! -f "${C_REBOOT}" ]; then
-        [[ "${TESTARGS}" == ext* ]] || log_error "- ${TESTARGS} is not a valid ext type"
+        [[ "${TESTARGS}" == ext* ]] || log_fatal_error "- ${TESTARGS} is not a valid ext type"
 
         kdump_prepare
         config_kdump_fs ${TESTARGS}

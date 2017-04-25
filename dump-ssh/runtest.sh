@@ -27,7 +27,7 @@
 ssh_sysrq_test()
 {
     if [ -z "${SERVERS}" -o -z "${CLIENTS}" ]; then
-        log_error "No Server or Client hostname"
+        log_fatal_error "No Server or Client hostname"
     fi
 
     # port used for client/server sync
@@ -47,7 +47,7 @@ ssh_sysrq_test()
 
             log_info "- Notifying server that test is done at client."
             send_notify_signal "${SERVERS}" ${done_sync_port}
-            log_error "- Failed to trigger crash."
+            log_fatal_error "- Failed to trigger crash."
 
         elif [[ $(get_role) == "server" ]]; then
             log_info "- Waiting at ${done_sync_port} for signal from client that test/crash is done."
