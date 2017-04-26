@@ -67,7 +67,7 @@ report_file()
         if is_beaker_env; then
             rhts-submit-log -l "$filename"
         else
-            cat ${filename}
+            cat "${filename}"
         fi
     else
         # if file doesn't exist.
@@ -127,10 +127,10 @@ ready_to_exit()
         if [[ $1 == "1" ]]; then   # Warn - Report warn and continue to next test
             echo -e "${K_TEST_NAME}\t\t\tWarn" >> "${K_TEST_SUMMARY}"
             report_result "${TEST}" "WARN" "1"
-        if [[ $1 == "2" ]]; then   # Error - Report error and continue to next test
+        elif [[ $1 == "2" ]]; then   # Error - Report error and continue to next test
             echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
             report_result "${TEST}" "FAIL" "1"
-        if [[ $1 == "3" ]]; then   # Fatal error - Report error and abort test
+        elif [[ $1 == "3" ]]; then   # Fatal error - Report error and abort test
             echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
             report_result "${TEST}" "FAIL" "1"
             rhts-abort -t recipeset
@@ -142,11 +142,11 @@ ready_to_exit()
         if [[ $1 == "1" ]]; then # Warn - Report warn and continue to next test
             echo -e "${K_TEST_NAME}\t\t\tWarn" >> "${K_TEST_SUMMARY}"
             log_info "- [WARN] Please check test logs!"
-        if [[ $1 == "2" ]]; then # Error - Report error and exit test
+        elif [[ $1 == "2" ]]; then # Error - Report error and exit test
             echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
             log_info "- [FAIL] Please check test logs!"
             exit 1
-        if [[ $1 == "3" ]]; then # Fatal error - Report error and exit test
+        elif [[ $1 == "3" ]]; then # Fatal error - Report error and exit test
             echo -e "${K_TEST_NAME}\t\t\tFail" >> "${K_TEST_SUMMARY}"
             log_info "- [FATAL_FAIL] Please check test logs!"
             exit 1
@@ -154,6 +154,7 @@ ready_to_exit()
             echo -e "${K_TEST_NAME}\t\t\tPass" >> "${K_TEST_SUMMARY}"
             log_info "- [PASS] Tests finished successfully!"
             exit 0
+        fi
     fi
 }
 
