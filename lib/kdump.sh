@@ -537,14 +537,14 @@ config_kdump_sysconfig()
             # because it doesn't know if this is the first value or not in the setting.
             # So pls add space explicitly in your call if needed:
             #       config_kdump_sysconfig KEXEC_ARGS add " value2"
-            sed -i  /^"$key"/s/\"/"$value1"\"/2 "${K_SYS_CONFIG}"
+            sed -i  /^"$key="/s/\"/"$value1"\"/2 "${K_SYS_CONFIG}"
             ;;
         remove)
-            sed -i  /^"$key"/s/"$value1"//g "${K_SYS_CONFIG}"
+            sed -i  /^"$key="/s/"$value1"//g "${K_SYS_CONFIG}"
             ;;
         replace)
             [ -z "$value2" ] && log_fatal_error "- Missing new_value for replacing."
-            sed -i  /^"$key"/s/"$value1"/"$value2"/g "${K_SYS_CONFIG}"
+            sed -i  /^"$key="/s/"$value1"/"$value2"/g "${K_SYS_CONFIG}"
             ;;
         *)
             log_fatal_error "- Invalid action '${action}' for editing kdump sysconfig."
