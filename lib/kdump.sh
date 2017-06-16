@@ -377,7 +377,19 @@ config_kdump_any()
 {
     [ $# -eq 0 ] && log_fatal_error "- Expect a config line"
     append_config "$1"
+
+	stat /boot/initramfs-*kdump.img
+	lsinitrd -f etc/kdump.conf /boot/initramfs-*kdump.img
+	stat "${K_CONFIG}"
+    hwclock
+    date '+%c''+%N'
     kdump_restart
+	stat /boot/initramfs-*kdump.img
+	lsinitrd -f etc/kdump.conf /boot/initramfs-*kdump.img
+	stat "${K_CONFIG}"
+    hwclock
+    date '+%c''+%N'
+
 }
 
 
